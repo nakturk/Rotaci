@@ -301,6 +301,7 @@
     "startHere": "Buradan Başla",
     "routeToHere": "Buraya Git (Durak Ekle)",
     "splitRouteHere": "Rotayı Buradan Böl",
+    "addWaypointToSelectedRoute": "Seçili Rotaya Ara Nokta Ekle",
     "dragToRerouteOrSplit": "Rotayı taşımak ve bölmek için sürükleyin, veya buradan bölmek için tıklayın",
     "addPoiHere": "Yeni POI Ekle",
     "addAvoidAreaHere": "Yasak Bölge Ekle",

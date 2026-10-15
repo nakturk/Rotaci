@@ -1101,8 +1101,7 @@ export const useTripStore = create<TripStore>((set, get) => {
       const midStop: StopPoint = {
         id: `stop-${Date.now()}`,
         label: midLabel,
-        coordinates: splitPointCoords,
-        stopDurationMinutes: 15
+        coordinates: splitPointCoords
       };
 
       const avoidPolygons = state.trip.avoidAreas?.map((a) => a.coordinates) || [];
@@ -1139,8 +1138,8 @@ export const useTripStore = create<TripStore>((set, get) => {
         targetSpan.vehicleType
       );
 
-      // Departure time for leg 2 (after 15 min stop)
-      const depMinutes2 = etaTotalMin1 + (midStop.stopDurationMinutes || 15);
+      // Departure time for leg 2 (without forced 15 min break)
+      const depMinutes2 = etaTotalMin1 + (midStop.stopDurationMinutes || 0);
       const depHourStr2 = String(Math.floor((depMinutes2 % 1440) / 60)).padStart(2, '0');
       const depMinStr2 = String(depMinutes2 % 60).padStart(2, '0');
       const departureTime2 = `${depHourStr2}:${depMinStr2}`;

@@ -12,6 +12,7 @@ import {
   Globe,
   Sliders,
   Scissors,
+  Route,
   X
 } from 'lucide-react';
 import { createCircularPolygon, formatRadius } from '../trip/avoidAreaUtils';
@@ -20,6 +21,8 @@ export const MapContextMenu: React.FC = () => {
   const { t } = useTranslation();
   const {
     trip,
+    activeDayId,
+    activeSpanId,
     contextMenu,
     setContextMenu,
     pendingStartPoint,
@@ -86,6 +89,11 @@ export const MapContextMenu: React.FC = () => {
   const isPoi = !!contextMenu?.poiId;
   const poiLabel = contextMenu?.poiLabel;
 
+  const activeDay = trip.days.find((d) => d.id === activeDayId) || trip.days[0];
+  const selectedSpan = activeSpanId
+    ? trip.days.flatMap((d) => d.spans).find((s) => s.id === activeSpanId) || null
+    : (activeDay?.spans.length === 1 ? activeDay.spans[0] : null);
+
   // Handle Route To Here
   const handleRouteToHere = async () => {
     const toLabel = poiLabel;
@@ -104,6 +112,15 @@ export const MapContextMenu: React.FC = () => {
     const coords = activeLngLat;
     setContextMenu(null);
     await splitSpan(sId, coords);
+  };
+
+  // Handle Add Clicked Point as Waypoint to Selected Route (A-B -> A-C & C-B)
+  const handleAddWaypointToSelectedRoute = async () => {
+    if (!selectedSpan) return;
+    const coords = activeLngLat;
+    const label = poiLabel;
+    setContextMenu(null);
+    await splitSpan(selectedSpan.id, coords, label);
   };
 
   // Handle Delete Stop & Merge Routes
@@ -268,8 +285,8 @@ export const MapContextMenu: React.FC = () => {
   const maxW = mapWrapper ? mapWrapper.clientWidth : window.innerWidth;
   const maxH = mapWrapper ? mapWrapper.clientHeight : window.innerHeight;
 
-  const menuWidth = 250;
-  const menuHeight = isAvoidArea ? 260 : isPoi ? 240 : contextMenu?.stopInfo ? 260 : 220;
+  const menuWidth = 265;
+  const menuHeight = isAvoidArea ? 280 : isPoi ? 280 : contextMenu?.stopInfo ? 260 : selectedSpan ? 280 : 220;
   const safeX = Math.max(10, Math.min(x, maxW - menuWidth - 15));
   const safeY = Math.max(10, Math.min(y, maxH - menuHeight - 15));
 
@@ -343,14 +360,32 @@ export const MapContextMenu: React.FC = () => {
               </>
             ) : null}
 
-            {contextMenu?.spanId && (
+            {/* Add as Waypoint to Selected Route (A-C & C-B) */}
+            {selectedSpan && !contextMenu?.stopInfo && (
+              <button
+                className="menu-item primary"
+                onClick={handleAddWaypointToSelectedRoute}
+                disabled={isCalculatingRoute}
+                title={`${selectedSpan.from.label} ➔ ${selectedSpan.to.label}`}
+              >
+                <Route size={16} className="text-emerald shrink-0" />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', overflow: 'hidden' }}>
+                  <span>{t('contextMenu.addWaypointToSelectedRoute')}</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 'normal', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '190px' }}>
+                    {selectedSpan.from.label} ➔ {selectedSpan.to.label}
+                  </span>
+                </div>
+              </button>
+            )}
+
+            {contextMenu?.spanId && contextMenu.spanId !== selectedSpan?.id && (
               <button
                 className="menu-item primary"
                 onClick={handleSplitRoute}
                 disabled={isCalculatingRoute}
                 title={t('contextMenu.splitRouteHere')}
               >
-                <Scissors size={16} className="text-pink" />
+                <Scissors size={16} className="text-pink shrink-0" />
                 <span>{t('contextMenu.splitRouteHere')}</span>
               </button>
             )}

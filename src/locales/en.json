@@ -301,6 +301,7 @@
     "startHere": "Start From Here",
     "routeToHere": "Route To Here (Add Stop)",
     "splitRouteHere": "Split Route Here",
+    "addWaypointToSelectedRoute": "Add Waypoint to Selected Route",
     "dragToRerouteOrSplit": "Drag to reroute and split, or click to split here",
     "addPoiHere": "Add New POI Here",
     "addAvoidAreaHere": "Add Avoid Area Here",
