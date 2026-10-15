@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "Rotacı",
+    "tagline": "Multi-Day Trip Planner",
+    "newTrip": "New Trip",
+    "save": "Save",
+    "export": "Export",
+    "import": "Import",
+    "settings": "Settings"
+  },
+  "map": {
+    "layers": "Map Layers",
+    "street": "Street (OpenFreeMap)",
+    "bright": "Colorful (Bright)",
+    "positron": "Minimal (Positron)",
+    "osm": "OpenStreetMap",
+    "topo": "Topographic (OpenTopo)",
+    "satellite": "Satellite (Esri World)",
+    "terrain3d": "3D Terrain",
+    "offlineMap": "Offline (OAM)",
+    "weatherOverlay": "Precipitation Radar"
+  },
+  "trip": {
+    "days": "Days",
+    "day": "Day",
+    "addDay": "Add Day",
+    "deleteDay": "Delete Day",
+    "spans": "Route Spans",
+    "addSpan": "Add Span",
+    "pois": "Points (POI)",
+    "addPoi": "Add POI",
+    "avoidAreas": "Avoid Areas",
+    "addAvoidArea": "Draw Avoid Area",
+    "totalDistance": "Total Distance",
+    "totalDuration": "Total Driving",
+    "ascent": "Ascent",
+    "maxGrade": "Max Grade",
+    "startDate": "Start Date",
+    "startTime": "Departure Time"
+  },
+  "routing": {
+    "vehicle": "Vehicle",
+    "car": "Car",
+    "motorcycle": "Motorcycle",
+    "camper": "Camper / Van",
+    "suv": "4x4 / Offroad",
+    "bicycle": "Bicycle",
+    "surface": "Road Surface",
+    "surfacePaved": "Paved Only",
+    "surfaceMixed": "Mixed",
+    "surfaceOffroad": "Offroad Priority",
+    "curvyRoads": "Curvy Roads",
+    "avoidTolls": "Avoid Tolls",
+    "avoidHighways": "Avoid Highways",
+    "avoidFerries": "Avoid Ferries",
+    "avoidSteep": "Prefer Less Incline",
+    "maxGradeLimit": "Max Grade Limit"
+  },
+  "weather": {
+    "title": "Weather Along Route",
+    "temperature": "Temperature",
+    "wind": "Wind",
+    "precipitation": "Precipitation",
+    "timeline": "Timeline Player",
+    "windWarning": "High Wind Warning",
+    "freezeWarning": "Black Ice Risk"
+  },
+  "contextMenu": {
+    "startHere": "Start From Here",
+    "routeToHere": "Route To Here (Add Stop)",
+    "addPoiHere": "Add New POI",
+    "addAvoidAreaHere": "Add Avoid Area",
+    "copyCoords": "Copy Coordinates"
+  },
+  "actions": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Saved",
+    "confirmNewTrip": "Create new trip? Any unsaved changes may be reset."
+  }
+}

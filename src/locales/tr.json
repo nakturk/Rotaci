@@ -1,0 +1,85 @@
+{
+  "app": {
+    "title": "Rotacı",
+    "tagline": "Çok Günlü Seyahat Planlayıcı",
+    "newTrip": "Yeni Seyahat",
+    "save": "Kaydet",
+    "export": "Dışa Aktar",
+    "import": "İçe Aktar",
+    "settings": "Ayarlar"
+  },
+  "map": {
+    "layers": "Harita Katmanları",
+    "street": "Cadde (OpenFreeMap)",
+    "bright": "Renkli (Bright)",
+    "positron": "Sade (Positron)",
+    "osm": "OpenStreetMap",
+    "topo": "Topografik (OpenTopo)",
+    "satellite": "Uydu (Esri World)",
+    "terrain3d": "3D Arazi",
+    "offlineMap": "Çevrimdışı (OAM)",
+    "weatherOverlay": "Yağış Radarı"
+  },
+  "trip": {
+    "days": "Günler",
+    "day": "Gün",
+    "addDay": "Gün Ekle",
+    "deleteDay": "Günü Sil",
+    "spans": "Rota Parçaları",
+    "addSpan": "Rota Ekle",
+    "pois": "Noktalar (POI)",
+    "addPoi": "POI Ekle",
+    "avoidAreas": "Yasak Bölgeler",
+    "addAvoidArea": "Yasak Bölge Çiz",
+    "totalDistance": "Toplam Mesafe",
+    "totalDuration": "Toplam Sürüş",
+    "ascent": "Tırmanış",
+    "maxGrade": "Maks. Eğim",
+    "startDate": "Başlangıç Tarihi",
+    "startTime": "Kalkış Saati"
+  },
+  "routing": {
+    "vehicle": "Taşıt",
+    "car": "Otomobil",
+    "motorcycle": "Motosiklet",
+    "camper": "Karavan",
+    "suv": "Arazi (4x4)",
+    "bicycle": "Bisiklet",
+    "surface": "Yol Yüzeyi",
+    "surfacePaved": "Sadece Asfalt",
+    "surfaceMixed": "Karma",
+    "surfaceOffroad": "Offroad Öncelikli",
+    "curvyRoads": "Virajlı Yollar",
+    "avoidTolls": "Ücretli Yoldan Kaçın",
+    "avoidHighways": "Otoyoldan Kaçın",
+    "avoidFerries": "Feribottan Kaçın",
+    "avoidSteep": "Az Yokuş Tercih Et",
+    "maxGradeLimit": "Maksimum Eğim"
+  },
+  "weather": {
+    "title": "Rota Boyunca Hava Durumu",
+    "temperature": "Sıcaklık",
+    "wind": "Rüzgar",
+    "precipitation": "Yağış",
+    "timeline": "Zaman Çizelgesi Oynatıcı",
+    "windWarning": "Şiddetli Rüzgar Uyarısı",
+    "freezeWarning": "Gizli Buzlanma Riski"
+  },
+  "contextMenu": {
+    "startHere": "Buradan Başla",
+    "routeToHere": "Buraya Git (Durak Ekle)",
+    "addPoiHere": "Yeni POI Ekle",
+    "addAvoidAreaHere": "Yasak Bölge Ekle",
+    "copyCoords": "Koordinatları Kopyala"
+  },
+  "actions": {
+    "undo": "Geri Al",
+    "redo": "Yinele",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "saved": "Kaydedildi",
+    "confirmNewTrip": "Yeni seyahat oluşturulsun mu? Mevcut kaydedilmemiş değişiklikler sıfırlanabilir."
+  }
+}
