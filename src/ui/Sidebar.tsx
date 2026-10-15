@@ -115,11 +115,11 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="trip-stat">
             <Clock size={14} className="stat-icon text-amber" />
-            <span><strong>{Math.floor(totalMinutes / 60)}s {totalMinutes % 60}d</strong></span>
+            <span><strong>{t('trip.totalHours', { h: Math.floor(totalMinutes / 60), m: totalMinutes % 60 })}</strong></span>
           </div>
           <div className="trip-stat">
             <Calendar size={14} className="stat-icon text-emerald" />
-            <span><strong>{trip.days.length}</strong> gün</span>
+            <span><strong>{trip.days.length}</strong> {t('trip.totalDays', { count: trip.days.length }).replace(`${trip.days.length} `, '')}</span>
           </div>
         </div>
       </div>
@@ -150,7 +150,7 @@ export const Sidebar: React.FC = () => {
               >
                 <div className="day-header">
                   <span className="day-badge" style={{ backgroundColor: isDayHidden ? '#64748b' : day.color }}>
-                    {day.index}. Gün
+                    {t('trip.dayIndex', { index: day.index })}
                   </span>
                   <span className="day-date">{day.date}</span>
 
@@ -159,21 +159,21 @@ export const Sidebar: React.FC = () => {
                     <button
                       onClick={() => toggleDayVisibility(day.id)}
                       className={`btn-tiny ${isDayHidden ? 'text-dimmed' : 'text-sky'}`}
-                      title={isDayHidden ? 'Günü Haritada Göster' : 'Günü Haritada Gizle'}
+                      title={isDayHidden ? t('trip.showDayOnMap') : t('trip.hideDayOnMap')}
                     >
                       {isDayHidden ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
                     <button
                       onClick={() => setStylingDayId(stylingDayId === day.id ? null : day.id)}
                       className={`btn-tiny ${stylingDayId === day.id ? 'active text-pink' : ''}`}
-                      title="Gün Çizgi & Renk Stilini Düzenle"
+                      title={t('trip.editDayStyle')}
                     >
                       <Palette size={12} />
                     </button>
                     <button
                       onClick={(e) => startEditDay(day.id, day.title, e)}
                       className="btn-tiny"
-                      title="Günü Düzenle"
+                      title={t('trip.editDay')}
                     >
                       <Edit2 size={12} />
                     </button>
@@ -181,7 +181,7 @@ export const Sidebar: React.FC = () => {
                       <button
                         onClick={() => moveDay(day.id, 'up')}
                         className="btn-tiny"
-                        title="Yukarı Taşı"
+                        title={t('trip.moveUp')}
                       >
                         <ChevronUp size={12} />
                       </button>
@@ -190,7 +190,7 @@ export const Sidebar: React.FC = () => {
                       <button
                         onClick={() => moveDay(day.id, 'down')}
                         className="btn-tiny"
-                        title="Aşağı Taşı"
+                        title={t('trip.moveDown')}
                       >
                         <ChevronDown size={12} />
                       </button>
@@ -198,21 +198,21 @@ export const Sidebar: React.FC = () => {
                     {trip.days.length > 1 && (
                       confirmDayDeleteId === day.id ? (
                         <div className="inline-confirm-box" onClick={(e) => e.stopPropagation()}>
-                          <span className="confirm-text">Silinsin mi?</span>
+                          <span className="confirm-text">{t('trip.confirmDeleteDay')}</span>
                           <button
                             onClick={() => {
                               deleteDay(day.id);
                               setConfirmDayDeleteId(null);
                             }}
                             className="btn-tiny text-rose"
-                            title="Evet, Sil"
+                            title={t('trip.yesDelete')}
                           >
                             <Check size={12} />
                           </button>
                           <button
                             onClick={() => setConfirmDayDeleteId(null)}
                             className="btn-tiny text-slate"
-                            title="İptal"
+                            title={t('trip.cancel')}
                           >
                             <X size={12} />
                           </button>
@@ -224,7 +224,7 @@ export const Sidebar: React.FC = () => {
                             setConfirmDayDeleteId(day.id);
                           }}
                           className="btn-tiny text-rose"
-                          title="Günü Sil"
+                          title={t('trip.deleteDayTitle')}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -241,7 +241,7 @@ export const Sidebar: React.FC = () => {
                     backgroundColor: (day.lineStyle || 'solid') === 'solid' ? (isDayHidden ? '#64748b' : day.color) : 'transparent',
                     height: `${Math.min(day.lineWidth ?? 5, 6)}px`
                   }}
-                  title={`Gün Çizgi Stili: ${day.lineWidth ?? 5}px · ${day.lineStyle || 'solid'}`}
+                  title={t('trip.dayLineStyleTitle', { w: day.lineWidth ?? 5, style: day.lineStyle || 'solid' })}
                 />
 
                 {isEditing ? (
@@ -265,7 +265,7 @@ export const Sidebar: React.FC = () => {
                 )}
 
                 <div className="day-meta">
-                  <span>{day.spans.length} rota parçası</span>
+                  <span>{t('trip.routeSpansCount', { count: day.spans.length })}</span>
                   <span>{dayDistance.toFixed(1)} km</span>
                 </div>
 
@@ -273,7 +273,7 @@ export const Sidebar: React.FC = () => {
                 {stylingDayId === day.id && (
                   <div className="day-style-panel" onClick={(e) => e.stopPropagation()}>
                     <div className="style-panel-header">
-                      <span className="style-panel-title">Gün Çizgi & Renk Stili</span>
+                      <span className="style-panel-title">{t('trip.dayStyleTitle')}</span>
                       <button onClick={() => setStylingDayId(null)} className="btn-tiny text-slate">
                         <X size={12} />
                       </button>
@@ -281,7 +281,7 @@ export const Sidebar: React.FC = () => {
 
                     {/* Color Swatches */}
                     <div className="style-panel-section">
-                      <span className="panel-sub-label">Renk</span>
+                      <span className="panel-sub-label">{t('trip.color')}</span>
                       <div className="color-swatches-grid mini">
                         {COLOR_PRESETS.map((c) => (
                           <button
@@ -293,7 +293,7 @@ export const Sidebar: React.FC = () => {
                             title={c}
                           />
                         ))}
-                        <label className="color-picker-label mini" title="Özel Renk Seç">
+                        <label className="color-picker-label mini" title={t('trip.customColor')}>
                           <input
                             type="color"
                             value={day.color}
@@ -307,7 +307,7 @@ export const Sidebar: React.FC = () => {
 
                     {/* Width selector */}
                     <div className="style-panel-section">
-                      <span className="panel-sub-label">Kalınlık</span>
+                      <span className="panel-sub-label">{t('trip.thickness')}</span>
                       <div className="pill-btn-group">
                         {[
                           { w: 3, label: '3px' },
@@ -329,12 +329,12 @@ export const Sidebar: React.FC = () => {
 
                     {/* Pattern selector */}
                     <div className="style-panel-section">
-                      <span className="panel-sub-label">Çizgi Tipi</span>
+                      <span className="panel-sub-label">{t('trip.lineType')}</span>
                       <div className="pill-btn-group">
                         {[
-                          { id: 'solid', label: 'Düz ──' },
-                          { id: 'dashed', label: 'Kesik ╌╌' },
-                          { id: 'dotted', label: 'Nokta ··' }
+                          { id: 'solid', label: t('trip.solid') },
+                          { id: 'dashed', label: t('trip.dashed') },
+                          { id: 'dotted', label: t('trip.dotted') }
                         ].map((p) => (
                           <button
                             key={p.id}
@@ -359,18 +359,18 @@ export const Sidebar: React.FC = () => {
       {activeDay && (
         <div className="spans-section">
           <div className="section-title-row">
-            <span className="section-title">{activeDay.index}. Gün Rotaları ({activeDay.spans.length})</span>
+            <span className="section-title">{t('trip.daySpans', { index: activeDay.index, count: activeDay.spans.length })}</span>
             <div className="section-hint">
               <Navigation size={12} className="inline mr-1 text-sky" />
-              <span>Haritaya sağ tıklayarak durak ekleyin</span>
+              <span>{t('trip.rightClickHint')}</span>
             </div>
           </div>
 
           <div className="spans-list">
             {activeDay.spans.length === 0 ? (
               <div className="empty-spans-card">
-                <p>Bu güne henüz rota eklenmedi.</p>
-                <small>Harita üzerinde herhangi bir noktaya <strong>sağ tıklayarak</strong> "Buraya Git" seçebilirsiniz.</small>
+                <p>{t('trip.noSpansYet')}</p>
+                <small>{t('trip.noSpansHint')}</small>
               </div>
             ) : (
               activeDay.spans.map((span, sIdx) => {
@@ -397,22 +397,26 @@ export const Sidebar: React.FC = () => {
                             backgroundColor: effectiveSpanStyle === 'solid' ? effectiveSpanColor : 'transparent',
                             height: `${Math.min(effectiveSpanWidth, 6)}px`
                           }}
-                          title={`Çizgi: ${effectiveSpanWidth}px · ${effectiveSpanStyle} (${span.color ? 'Özel Renk' : 'Günden'})`}
+                          title={t('trip.spanLineTitle', {
+                            w: effectiveSpanWidth,
+                            style: effectiveSpanStyle,
+                            source: span.color ? t('trip.customColorLabel') : t('trip.fromDayLabel')
+                          })}
                         />
-                        {isSpanHidden && <span className="hidden-tag">Gizli</span>}
+                        {isSpanHidden && <span className="hidden-tag">{t('trip.hidden')}</span>}
                       </div>
                       <div className="span-card-tools" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setActiveSpan(span.id)}
                           className={`btn-tiny ${hasSpanCustomStyle ? 'text-pink' : 'text-slate'}`}
-                          title="Parçacık Çizgi & Renk Stilini Düzenle (Sağ Panel)"
+                          title={t('trip.editSpanStyle')}
                         >
                           <Palette size={12} />
                         </button>
                         <button
                           onClick={() => toggleSpanVisibility(span.id)}
                           className={`btn-tiny ${isSpanHidden ? 'text-dimmed' : 'text-sky'}`}
-                          title={isSpanHidden ? 'Rotayı Haritada Göster' : 'Rotayı Haritada Gizle'}
+                          title={isSpanHidden ? t('trip.showSpanOnMap') : t('trip.hideSpanOnMap')}
                         >
                           {isSpanHidden ? <EyeOff size={13} /> : <Eye size={13} />}
                         </button>
@@ -420,7 +424,7 @@ export const Sidebar: React.FC = () => {
                           <button
                             onClick={() => moveSpan(activeDay.id, span.id, 'up')}
                             className="btn-tiny"
-                            title="Yukarı Taşı"
+                            title={t('trip.moveUp')}
                           >
                             <ChevronUp size={12} />
                           </button>
@@ -429,7 +433,7 @@ export const Sidebar: React.FC = () => {
                           <button
                             onClick={() => moveSpan(activeDay.id, span.id, 'down')}
                             className="btn-tiny"
-                            title="Aşağı Taşı"
+                            title={t('trip.moveDown')}
                           >
                             <ChevronDown size={12} />
                           </button>
@@ -440,7 +444,7 @@ export const Sidebar: React.FC = () => {
                             deleteSpan(span.id);
                           }}
                           className="btn-tiny text-rose"
-                          title="Rotayı Sil"
+                          title={t('trip.deleteSpan')}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -462,19 +466,19 @@ export const Sidebar: React.FC = () => {
                     <div className="span-badges">
                       <span className="badge badge-vehicle">
                         {span.vehicleType === 'motorcycle'
-                          ? '🏍️ Motosiklet'
+                          ? `🏍️ ${t('routing.motorcycle')}`
                           : span.vehicleType === 'car'
-                          ? '🚗 Otomobil'
+                          ? `🚗 ${t('routing.car')}`
                           : span.vehicleType === 'camper'
-                          ? '🚐 Karavan'
+                          ? `🚐 ${t('routing.camper')}`
                           : span.vehicleType === 'suv'
-                          ? '🚙 4x4'
-                          : '🚲 Bisiklet'}
+                          ? `🚙 ${t('routing.suv')}`
+                          : `🚲 ${t('routing.bicycle')}`}
                       </span>
                       <span className="badge badge-dist">{span.distanceKm.toFixed(1)} km</span>
-                      <span className="badge badge-time">{span.durationMinutes} dk</span>
+                      <span className="badge badge-time">{t('trip.minutesShort', { min: span.durationMinutes })}</span>
                       {span.options.curvyRoads && (
-                        <span className="badge badge-curvy">~ Virajlı</span>
+                        <span className="badge badge-curvy">{t('trip.curvyBadge')}</span>
                       )}
                     </div>
                   </div>
@@ -498,31 +502,31 @@ export const Sidebar: React.FC = () => {
           type="button"
           className="poi-subgroup-header clickable"
           onClick={() => setGlobalPoisOpen((prev) => !prev)}
-          title={globalPoisOpen ? 'Global POI grubunu daralt' : 'Global POI grubunu genişlet'}
+          title={globalPoisOpen ? t('poi.collapseGroup') : t('poi.expandGroup')}
         >
           <div className="poi-subgroup-header-row">
             <span className="poi-subgroup-title">
-              <Globe size={13} className="inline mr-1 text-sky" /> Global Noktalarım
+              <Globe size={13} className="inline mr-1 text-sky" /> {t('poi.globalTitle')}
               <span className="poi-count-badge ml-1.5">{globalPois.length}</span>
             </span>
             <span className={`chevron-indicator ${globalPoisOpen ? 'open' : ''}`}>
               <ChevronDown size={14} />
             </span>
           </div>
-          <span className="poi-subgroup-desc">Tüm seyahatlerinizde hazır</span>
+          <span className="poi-subgroup-desc">{t('poi.globalDesc')}</span>
         </button>
 
         {globalPoisOpen && (
           <div className="poi-mini-list">
             {globalPois.length === 0 ? (
-              <div className="empty-subgroup-hint">Henüz global POI yok. Haritada bir noktaya sağ tıklayıp ekleyebilirsiniz.</div>
+              <div className="empty-subgroup-hint">{t('poi.globalEmpty')}</div>
             ) : (
               globalPois.map((poi) => (
                 <div
                   key={poi.id}
                   className="poi-item is-global"
                   onClick={() => setSelectedPoi(poi.id)}
-                  title="Haritada Odaklan"
+                  title={t('poi.focusOnMap')}
                 >
                   <span className="poi-icon">
                     {poi.category === 'personal'
@@ -550,7 +554,7 @@ export const Sidebar: React.FC = () => {
                         });
                       }}
                       className="btn-tiny text-emerald"
-                      title="Buradan Rota Başlat"
+                      title={t('poi.startRouteFromHere')}
                     >
                       <Flag size={12} />
                     </button>
@@ -561,28 +565,28 @@ export const Sidebar: React.FC = () => {
                         await addSpanToActiveDay(poi.coordinates, poi.label, fromPt);
                       }}
                       className="btn-tiny text-sky"
-                      title="Buraya Rota Oluştur"
+                      title={t('poi.createRouteToHere')}
                     >
                       <Navigation size={12} />
                     </button>
                     <button
                       onClick={() => togglePoiGlobal(poi.id)}
                       className="btn-tiny text-amber"
-                      title="Bu Seyahate Özel Yap (Globalden Çıkar)"
+                      title={t('poi.makeTripSpecific')}
                     >
                       <Globe size={12} />
                     </button>
                     <button
                       onClick={() => setCopyingPoiModal({ id: poi.id, label: poi.label })}
                       className="btn-tiny text-slate-300"
-                      title="Başka Seyahate Kopyala..."
+                      title={t('poi.copyToAnotherTrip')}
                     >
                       <Copy size={12} />
                     </button>
                     <button
                       onClick={() => deletePoi(poi.id)}
                       className="btn-tiny text-rose poi-del-btn"
-                      title="POI Sil"
+                      title={t('poi.deletePoi')}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -598,31 +602,31 @@ export const Sidebar: React.FC = () => {
           type="button"
           className="poi-subgroup-header clickable mt-3"
           onClick={() => setTripPoisOpen((prev) => !prev)}
-          title={tripPoisOpen ? 'Seyahat POI grubunu daralt' : 'Seyahat POI grubunu genişlet'}
+          title={tripPoisOpen ? t('poi.collapseGroup') : t('poi.expandGroup')}
         >
           <div className="poi-subgroup-header-row">
             <span className="poi-subgroup-title">
-              <MapPin size={13} className="inline mr-1 text-emerald" /> Bu Seyahate Özel
+              <MapPin size={13} className="inline mr-1 text-emerald" /> {t('poi.tripSpecificTitle')}
               <span className="poi-count-badge ml-1.5">{trip.pois.length}</span>
             </span>
             <span className={`chevron-indicator ${tripPoisOpen ? 'open' : ''}`}>
               <ChevronDown size={14} />
             </span>
           </div>
-          <span className="poi-subgroup-desc">Yalnızca bu seyahate ait</span>
+          <span className="poi-subgroup-desc">{t('poi.tripSpecificDesc')}</span>
         </button>
 
         {tripPoisOpen && (
           <div className="poi-mini-list">
             {trip.pois.length === 0 ? (
-              <div className="empty-subgroup-hint">Bu seyahate özel nokta yok.</div>
+              <div className="empty-subgroup-hint">{t('poi.tripSpecificEmpty')}</div>
             ) : (
               trip.pois.map((poi) => (
                 <div
                   key={poi.id}
                   className="poi-item"
                   onClick={() => setSelectedPoi(poi.id)}
-                  title="Haritada Odaklan"
+                  title={t('poi.focusOnMap')}
                 >
                   <span className="poi-icon">
                     {poi.category === 'personal'
@@ -650,7 +654,7 @@ export const Sidebar: React.FC = () => {
                         });
                       }}
                       className="btn-tiny text-emerald"
-                      title="Buradan Rota Başlat"
+                      title={t('poi.startRouteFromHere')}
                     >
                       <Flag size={12} />
                     </button>
@@ -661,28 +665,28 @@ export const Sidebar: React.FC = () => {
                         await addSpanToActiveDay(poi.coordinates, poi.label, fromPt);
                       }}
                       className="btn-tiny text-sky"
-                      title="Buraya Rota Oluştur"
+                      title={t('poi.createRouteToHere')}
                     >
                       <Navigation size={12} />
                     </button>
                     <button
                       onClick={() => togglePoiGlobal(poi.id)}
                       className="btn-tiny text-sky"
-                      title="Global POI Yap (Tüm Seyahatlerde Görünsün)"
+                      title={t('poi.makeGlobal')}
                     >
                       <Globe size={12} />
                     </button>
                     <button
                       onClick={() => setCopyingPoiModal({ id: poi.id, label: poi.label })}
                       className="btn-tiny text-slate-300"
-                      title="Başka Seyahate Kopyala..."
+                      title={t('poi.copyToAnotherTrip')}
                     >
                       <Copy size={12} />
                     </button>
                     <button
                       onClick={() => deletePoi(poi.id)}
                       className="btn-tiny text-rose poi-del-btn"
-                      title="POI Sil"
+                      title={t('poi.deletePoi')}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -698,24 +702,24 @@ export const Sidebar: React.FC = () => {
           type="button"
           className="poi-subgroup-header clickable mt-3"
           onClick={() => setAvoidAreasOpen((prev) => !prev)}
-          title={avoidAreasOpen ? 'Yasak Bölgeleri daralt' : 'Yasak Bölgeleri genişlet'}
+          title={avoidAreasOpen ? t('poi.collapseGroup') : t('poi.expandGroup')}
         >
           <div className="poi-subgroup-header-row">
             <span className="poi-subgroup-title">
-              <ShieldAlert size={13} className="inline mr-1 text-rose" /> {t('trip.avoidAreas')}
+              <ShieldAlert size={13} className="inline mr-1 text-rose" /> {t('avoid.avoidAreasTitle')}
               <span className="poi-count-badge ml-1.5">{trip.avoidAreas.length}</span>
             </span>
             <span className={`chevron-indicator ${avoidAreasOpen ? 'open' : ''}`}>
               <ChevronDown size={14} />
             </span>
           </div>
-          <span className="poi-subgroup-desc">Rota hesaplamasında kaçınılacak alanlar</span>
+          <span className="poi-subgroup-desc">{t('avoid.avoidAreasDesc')}</span>
         </button>
 
         {avoidAreasOpen && (
           <div className="poi-mini-list">
             {trip.avoidAreas.length === 0 ? (
-              <div className="empty-subgroup-hint">Yasak bölge tanımlanmamış. Haritada bir noktaya sağ tıklayıp ekleyebilirsiniz.</div>
+              <div className="empty-subgroup-hint">{t('avoid.avoidEmpty')}</div>
             ) : (
               trip.avoidAreas.map((area) => {
                 const isEditing = editingAvoidId === area.id;
@@ -732,7 +736,7 @@ export const Sidebar: React.FC = () => {
                         <button
                           onClick={() => setEditingAvoidId(isEditing ? null : area.id)}
                           className={`btn-tiny ${isEditing ? 'text-rose active' : 'text-slate-300'}`}
-                          title="Boyutu Ayarla / Düzenle"
+                          title={t('avoid.adjustSize')}
                         >
                           <Sliders size={12} />
                         </button>
@@ -742,7 +746,7 @@ export const Sidebar: React.FC = () => {
                             deleteAvoidArea(area.id);
                           }}
                           className="btn-tiny text-rose poi-del-btn"
-                          title="Yasak Bölgeyi Sil"
+                          title={t('avoid.deleteAvoidArea')}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -753,7 +757,7 @@ export const Sidebar: React.FC = () => {
                     {isEditing && (
                       <div className="avoid-edit-panel">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[11px] text-slate-300 font-semibold">Kaçınma Alanı Boyutu:</span>
+                          <span className="text-[11px] text-slate-300 font-semibold">{t('avoid.avoidAreaSize')}</span>
                           <span className="text-[11px] font-bold text-rose">{formatRadius(radius)}</span>
                         </div>
 

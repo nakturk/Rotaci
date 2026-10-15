@@ -50,7 +50,7 @@ export const Inspector: React.FC = () => {
       <aside className="inspector empty">
         <div className="empty-message">
           <Navigation size={28} className="text-slate mb-2" />
-          <p>Düzenlemek için haritadan veya listeden bir rota parçası seçin.</p>
+          <p>{t('inspector.emptyPrompt')}</p>
         </div>
       </aside>
     );
@@ -67,9 +67,9 @@ export const Inspector: React.FC = () => {
       <div className="inspector-header">
         <div className="inspector-title">
           <Sliders size={16} className="text-sky" />
-          <span>Rota Kriterleri</span>
+          <span>{t('inspector.criteriaTitle')}</span>
         </div>
-        <span className="span-order-tag">{activeSpan.order}. Parça</span>
+        <span className="span-order-tag">{t('inspector.spanOrder', { order: activeSpan.order })}</span>
       </div>
 
       {/* Vehicle Type Selection */}
@@ -77,11 +77,11 @@ export const Inspector: React.FC = () => {
         <label className="form-label">{t('routing.vehicle')}</label>
         <div className="vehicle-grid">
           {[
-            { id: 'car', label: 'Otomobil', icon: '🚗' },
-            { id: 'motorcycle', label: 'Motosiklet', icon: '🏍️' },
-            { id: 'camper', label: 'Karavan', icon: '🚐' },
-            { id: 'suv', label: '4x4 Arazi', icon: '🚙' },
-            { id: 'bicycle', label: 'Bisiklet', icon: '🚲' }
+            { id: 'car', label: t('routing.car'), icon: '🚗' },
+            { id: 'motorcycle', label: t('routing.motorcycle'), icon: '🏍️' },
+            { id: 'camper', label: t('routing.camper'), icon: '🚐' },
+            { id: 'suv', label: t('routing.suv'), icon: '🚙' },
+            { id: 'bicycle', label: t('routing.bicycle'), icon: '🚲' }
           ].map((v) => (
             <button
               key={v.id}
@@ -96,21 +96,7 @@ export const Inspector: React.FC = () => {
 
         {/* Dynamic description of the selected vehicle profile */}
         <div className="vehicle-profile-card">
-          {activeSpan.vehicleType === 'motorcycle' && (
-            <p>🏍️ <strong>Motosiklet:</strong> Virajlı tali yolları ve dağ geçitlerini tercih eder. Otoyolları azaltır, manzaralı güzergâhları öne çıkarır.</p>
-          )}
-          {activeSpan.vehicleType === 'car' && (
-            <p>🚗 <strong>Otomobil:</strong> Standart binek araç profili. Düzgün asfalt zeminleri ve standart hız sınırlarını optimize eder.</p>
-          )}
-          {activeSpan.vehicleType === 'camper' && (
-            <p>🚐 <strong>Karavan (Camper):</strong> Valhalla kamyon modelini kullanır (3.2m yükseklik, 2.35m genişlik, 3.5t ağırlık). Dar köy sokaklarından, alçak tünellerden ve aşırı dik yokuşlardan kaçınır.</p>
-          )}
-          {activeSpan.vehicleType === 'suv' && (
-            <p>🚙 <strong>4x4 Arazi:</strong> Toprak, stabilize, tarla ve orman içi patika yolları (tracks) rotaya dahil etmeye izin verir.</p>
-          )}
-          {activeSpan.vehicleType === 'bicycle' && (
-            <p>🚲 <strong>Bisiklet:</strong> Karayolları ve otoyollardan kaçınır; bisiklet parkurları, kırsal yollar ve az eğimli rotaları seçer.</p>
-          )}
+          <p>{t(`inspector.vehicleProfiles.${activeSpan.vehicleType}`)}</p>
         </div>
       </div>
 
@@ -136,7 +122,7 @@ export const Inspector: React.FC = () => {
 
       {/* Routing Criteria Toggles */}
       <div className="form-group">
-        <label className="form-label">Özel Rota Tercihleri</label>
+        <label className="form-label">{t('inspector.specialPreferences')}</label>
         <div className="toggle-list">
           <label className="toggle-item">
             <span className="toggle-label">
@@ -212,12 +198,12 @@ export const Inspector: React.FC = () => {
               {t('routing.maxGradeLimit')}
             </span>
             <span className="text-sky font-semibold">
-              {options.maxGradeLimit ? `%${options.maxGradeLimit} maks` : 'Sınırsız'}
+              {options.maxGradeLimit ? t('inspector.maxGradeVal', { val: options.maxGradeLimit }) : t('inspector.unlimited')}
             </span>
           </label>
           <div className="grade-limit-buttons">
             {[
-              { val: undefined, label: 'Yok' },
+              { val: undefined, label: t('inspector.none') },
               { val: 6, label: '%6' },
               { val: 8, label: '%8' },
               { val: 10, label: '%10' },
@@ -255,9 +241,9 @@ export const Inspector: React.FC = () => {
           <label className="form-label flex items-center justify-between">
             <span>
               <Navigation size={14} className="inline mr-1 text-sky" />
-              <span>Alternatif Rotalar</span>
+              <span>{t('inspector.alternativesTitle')}</span>
             </span>
-            <span className="text-dim text-xs">{activeSpan.alternatives.length} alternatif</span>
+            <span className="text-dim text-xs">{t('inspector.alternativesCount', { count: activeSpan.alternatives.length })}</span>
           </label>
           <div className="alternatives-list">
             {activeSpan.alternatives.map((alt) => (
@@ -266,18 +252,18 @@ export const Inspector: React.FC = () => {
                   <div className="alt-title">{alt.name}</div>
                   <div className="alt-metrics">
                     <span>{alt.distanceKm} km</span> ·{' '}
-                    <span>{Math.floor(alt.durationMinutes / 60)}s {alt.durationMinutes % 60}d</span> ·{' '}
-                    <span className="text-pink">Viraj: {alt.curvatureScore}</span>
-                    {alt.maxGradePercent ? <span> · Eğim: %{alt.maxGradePercent}</span> : null}
+                    <span>{Math.floor(alt.durationMinutes / 60)}h {alt.durationMinutes % 60}m</span> ·{' '}
+                    <span className="text-pink">{t('inspector.curveScoreLabel')} {alt.curvatureScore}</span>
+                    {alt.maxGradePercent ? <span> · {t('inspector.gradeLabel')} %{alt.maxGradePercent}</span> : null}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => applySpanAlternative(activeSpan.id, alt.id)}
                   className="btn-tiny btn-switch-alt"
-                  title="Bu rotayı aktif rota olarak kullan"
+                  title={t('inspector.useAlternativeTitle')}
                 >
-                  Kullan
+                  {t('inspector.useAlternative')}
                 </button>
               </div>
             ))}
@@ -290,16 +276,16 @@ export const Inspector: React.FC = () => {
         <div className="section-subtitle-row">
           <label className="form-label">
             <Palette size={15} className="inline mr-1 text-pink" />
-            <span>Çizgi & Renk Stili</span>
+            <span>{t('inspector.lineAndColor')}</span>
           </label>
           {hasCustomStyle && (
             <button
               onClick={() => updateSpanStyle(activeSpan.id, { color: null, lineWidth: null, lineStyle: null })}
               className="btn-tiny text-sky reset-style-btn"
-              title="Günün varsayılan stiline dön"
+              title={t('inspector.inheritTitle')}
             >
               <RotateCcw size={11} className="inline mr-1" />
-              Günden Devral
+              {t('inspector.inheritFromDay')}
             </button>
           )}
         </div>
@@ -307,10 +293,10 @@ export const Inspector: React.FC = () => {
         {/* Live Line Preview */}
         <div className="line-preview-box">
           <div className="line-preview-info">
-            <span className="preview-label">Önizleme:</span>
+            <span className="preview-label">{t('inspector.preview')}</span>
             <span className="preview-badge" style={{ color: effectiveColor }}>
-              {activeSpan.color ? 'Özel' : 'Günden'} · {effectiveWidth}px · {
-                effectiveLineStyle === 'solid' ? 'Düz' : effectiveLineStyle === 'dashed' ? 'Kesikli' : 'Noktalı'
+              {activeSpan.color ? t('inspector.custom') : t('inspector.fromDay')} · {effectiveWidth}px · {
+                effectiveLineStyle === 'solid' ? t('inspector.solid') : effectiveLineStyle === 'dashed' ? t('inspector.dashed') : t('inspector.dotted')
               }
             </span>
           </div>
@@ -328,7 +314,7 @@ export const Inspector: React.FC = () => {
 
         {/* Color Palette */}
         <div className="style-subsection">
-          <span className="sub-label">Parçacık Rengi</span>
+          <span className="sub-label">{t('inspector.spanColor')}</span>
           <div className="color-swatches-grid">
             {COLOR_PRESETS.map((c) => (
               <button
@@ -340,7 +326,7 @@ export const Inspector: React.FC = () => {
                 title={c}
               />
             ))}
-            <label className="color-picker-label" title="Özel Renk Seç">
+            <label className="color-picker-label" title={t('trip.customColor')}>
               <input
                 type="color"
                 value={effectiveColor}
@@ -354,13 +340,13 @@ export const Inspector: React.FC = () => {
 
         {/* Line Thickness */}
         <div className="style-subsection">
-          <span className="sub-label">Çizgi Kalınlığı</span>
+          <span className="sub-label">{t('inspector.lineThickness')}</span>
           <div className="width-buttons-row">
             {[
-              { w: 3, label: 'İnce (3px)' },
-              { w: 5, label: 'Normal (5px)' },
-              { w: 8, label: 'Kalın (8px)' },
-              { w: 11, label: 'Geniş (11px)' }
+              { w: 3, label: t('inspector.thin') },
+              { w: 5, label: t('inspector.normal') },
+              { w: 8, label: t('inspector.thick') },
+              { w: 11, label: t('inspector.wide') }
             ].map(({ w, label }) => (
               <button
                 key={w}
@@ -376,12 +362,12 @@ export const Inspector: React.FC = () => {
 
         {/* Line Pattern (Solid / Dashed / Dotted) */}
         <div className="style-subsection">
-          <span className="sub-label">Çizgi Deseni</span>
+          <span className="sub-label">{t('inspector.linePattern')}</span>
           <div className="pattern-buttons-row">
             {[
-              { id: 'solid', label: 'Düz', preview: '────' },
-              { id: 'dashed', label: 'Kesikli', preview: '╌╌╌╌' },
-              { id: 'dotted', label: 'Noktalı', preview: '····' }
+              { id: 'solid', label: t('inspector.solid'), preview: '────' },
+              { id: 'dashed', label: t('inspector.dashed'), preview: '╌╌╌╌' },
+              { id: 'dotted', label: t('inspector.dotted'), preview: '····' }
             ].map((p) => (
               <button
                 key={p.id}
@@ -400,7 +386,7 @@ export const Inspector: React.FC = () => {
       {/* Curvature & Road Character Card */}
       <div className="surface-stats-card">
         <div className="surface-stat-title">
-          <span>Viraj Skoru (Açı / km)</span>
+          <span>{t('inspector.curvatureScore')}</span>
           <span className="stat-highlight-pink">{activeSpan.curvatureScore ?? 65} / 100</span>
         </div>
         <div className="curvature-meter-bar">
@@ -412,42 +398,42 @@ export const Inspector: React.FC = () => {
         <div className="curvature-desc-row">
           <span>
             {(activeSpan.curvatureScore ?? 65) > 85
-              ? '🏔️ Bol Virajlı Dağ/Kıyı Yolu'
+              ? t('inspector.twistyMountain')
               : (activeSpan.curvatureScore ?? 65) > 50
-              ? '🌿 Orta Seviye Virajlı Yol'
-              : '🛣️ Düz / Otoyol Karakterli'}
+              ? t('inspector.mediumTwisty')
+              : t('inspector.straightHighway')}
           </span>
         </div>
       </div>
 
-        <div className="surface-stats-card">
+      <div className="surface-stats-card">
         <div className="surface-stat-title flex items-center justify-between">
-          <span>Yol Yüzeyi Dağılımı</span>
+          <span>{t('inspector.surfaceBreakdown')}</span>
           <span className="text-xs text-dim">
-            {activeSpan.surfaceIsEstimated ? 'Tahmini' : '✓ OSM Gerçek'}
+            {activeSpan.surfaceIsEstimated ? t('inspector.estimated') : t('inspector.osmActual')}
           </span>
         </div>
         <div className="surface-bar">
           <div
             className="bar-seg paved"
             style={{ width: `${activeSpan.surfaceBreakdown?.paved ?? 88}%` }}
-            title={`Asfalt: %${activeSpan.surfaceBreakdown?.paved ?? 88}`}
+            title={`${t('inspector.paved')}: %${activeSpan.surfaceBreakdown?.paved ?? 88}`}
           />
           <div
             className="bar-seg gravel"
             style={{ width: `${activeSpan.surfaceBreakdown?.gravel ?? 10}%` }}
-            title={`Stabilize: %${activeSpan.surfaceBreakdown?.gravel ?? 10}`}
+            title={`${t('inspector.gravel')}: %${activeSpan.surfaceBreakdown?.gravel ?? 10}`}
           />
           <div
             className="bar-seg dirt"
             style={{ width: `${activeSpan.surfaceBreakdown?.dirt ?? 2}%` }}
-            title={`Toprak: %${activeSpan.surfaceBreakdown?.dirt ?? 2}`}
+            title={`${t('inspector.dirt')}: %${activeSpan.surfaceBreakdown?.dirt ?? 2}`}
           />
         </div>
         <div className="surface-legend-row">
-          <span><span className="sq paved" /> %{activeSpan.surfaceBreakdown?.paved ?? 88} Asfalt</span>
-          <span><span className="sq gravel" /> %{activeSpan.surfaceBreakdown?.gravel ?? 10} Stabilize</span>
-          <span><span className="sq dirt" /> %{activeSpan.surfaceBreakdown?.dirt ?? 2} Toprak</span>
+          <span><span className="sq paved" /> %{activeSpan.surfaceBreakdown?.paved ?? 88} {t('inspector.paved')}</span>
+          <span><span className="sq gravel" /> %{activeSpan.surfaceBreakdown?.gravel ?? 10} {t('inspector.gravel')}</span>
+          <span><span className="sq dirt" /> %{activeSpan.surfaceBreakdown?.dirt ?? 2} {t('inspector.dirt')}</span>
         </div>
       </div>
 
@@ -456,21 +442,21 @@ export const Inspector: React.FC = () => {
         <div className="surface-stat-title flex items-center justify-between">
           <span>
             <Mountain size={14} className="inline mr-1 text-sky" />
-            Topografya & Eğim
+            {t('inspector.topographyAndGrade')}
           </span>
-          <span className="text-xs text-dim">DEM Yükseklik</span>
+          <span className="text-xs text-dim">{t('inspector.demElevation')}</span>
         </div>
         <div className="elevation-mini-metrics">
           <div className="elev-metric">
-            <span className="label">Tırmanış:</span>
+            <span className="label">{t('inspector.ascent')}</span>
             <span className="value text-emerald">+{activeSpan.ascentMeters}m</span>
           </div>
           <div className="elev-metric">
-            <span className="label">İniş:</span>
+            <span className="label">{t('inspector.descent')}</span>
             <span className="value text-sky">-{activeSpan.descentMeters}m</span>
           </div>
           <div className="elev-metric">
-            <span className="label">Maks. Eğim:</span>
+            <span className="label">{t('inspector.maxGrade')}</span>
             <span className="value text-amber">%{activeSpan.maxGradePercent}</span>
           </div>
         </div>

@@ -6,6 +6,7 @@
 // - Alternative routes (Valhalla alternates + contrasting criteria query)
 // - Grade-aware (avoid steep / max grade) and curvature-aware candidate selection
 
+import i18n from '../i18n';
 import type {
   VehicleType,
   RouteOptions,
@@ -592,9 +593,7 @@ function isDistinct(a: { distanceKm: number; durationMinutes: number }, b: { dis
 
 function describeRoute(m: RouteMetrics): string {
   const tags: string[] = [];
-  tags.push(m.hasToll ? 'Ücretli' : 'Ücretsiz');
-  if (!m.hasHighway) tags.push('otoyolsuz');
-  if (m.hasFerry) tags.push('feribotlu');
+  tags.push(m.hasToll ? i18n.t('routing.tollRoad') : i18n.t('routing.freeRoad'));
   return tags.join(', ');
 }
 
@@ -614,7 +613,7 @@ export async function calculateRealRoadRoute(
   const { included, skippedCount } = selectAvoidPolygons(avoidAreas, from, to);
   if (skippedCount > 0) {
     warnings.push(
-      `${skippedCount} yasak bölge, Valhalla'nın 10 km toplam çevre sınırı nedeniyle bu parçada uygulanamadı.`
+      i18n.t('routing.warnings.avoidSkipped', { count: skippedCount })
     );
   }
 
@@ -647,7 +646,7 @@ export async function calculateRealRoadRoute(
       if (options.maxGradeLimit) {
         const ok = pool.filter((p) => p.m.maxGradePercent <= options.maxGradeLimit!);
         if (ok.length) pool = ok;
-        else warnings.push(`Hiçbir rota %${options.maxGradeLimit} eğim sınırının altında değil; en az eğimli olan seçildi.`);
+        else warnings.push(i18n.t('routing.warnings.noRouteBelowGrade', { grade: options.maxGradeLimit }));
       }
       if (options.avoidSteep || options.maxGradeLimit) {
         pool.sort((a, b) => a.m.maxGradePercent * 40 + a.m.ascentMeters - (b.m.maxGradePercent * 40 + b.m.ascentMeters));
@@ -661,7 +660,7 @@ export async function calculateRealRoadRoute(
         if (best) chosenIdx = best.i;
       }
     } else if (options.maxGradeLimit && enriched[0].maxGradePercent > options.maxGradeLimit) {
-      warnings.push(`Rotanın maks. eğimi (%${enriched[0].maxGradePercent}) belirlenen %${options.maxGradeLimit} sınırını aşıyor.`);
+      warnings.push(i18n.t('routing.warnings.maxGradeExceeded', { grade: enriched[0].maxGradePercent, limit: options.maxGradeLimit }));
     }
 
     const chosen = enriched[chosenIdx];
@@ -672,7 +671,7 @@ export async function calculateRealRoadRoute(
     }
 
     if (options.avoidTolls && chosen.hasToll) {
-      warnings.push('Ücretsiz bir alternatif bulunamadı; rota yine de ücretli bir kesim içeriyor.');
+      warnings.push(i18n.t('routing.warnings.tollIncluded'));
     }
 
     // 4. Build alternatives list (other Valhalla alternates + contrasting criteria route)
@@ -682,7 +681,7 @@ export async function calculateRealRoadRoute(
       alternatives.push({
         ...m,
         id: `alt-v${i}`,
-        name: `Alternatif ${alternatives.length + 1} (${describeRoute(m)})`,
+        name: i18n.t('routing.alternativeTitle', { index: alternatives.length + 1, desc: describeRoute(m) }),
         options: { ...options }
       });
     });
@@ -692,10 +691,10 @@ export async function calculateRealRoadRoute(
       const distinctFromAll = isDistinct(contrast, chosen) && alternatives.every((a) => isDistinct(a, contrast));
       if (distinctFromAll) {
         const name = options.avoidTolls
-          ? `Ücretli Yol / Köprü Rotası (${describeRoute(contrast)})`
+          ? i18n.t('routing.tollAlternative', { desc: describeRoute(contrast) })
           : options.avoidHighways
-          ? `Otoyol Dahil Hızlı Rota (${describeRoute(contrast)})`
-          : `Ücretsiz Rota (${describeRoute(contrast)})`;
+          ? i18n.t('routing.highwayAlternative', { desc: describeRoute(contrast) })
+          : i18n.t('routing.freeAlternative', { desc: describeRoute(contrast) });
         alternatives.push({ ...contrast, id: 'alt-contrast', name, options: contrastOptions });
       }
     }
@@ -703,7 +702,7 @@ export async function calculateRealRoadRoute(
     return { ...chosen, provider: 'valhalla', alternatives, warnings };
   } catch (err) {
     console.warn('Valhalla routing failed, falling back to OSRM:', err);
-    warnings.push('Valhalla erişilemedi — OSRM yedeği kullanıldı (ücretli/otoyol/eğim tercihleri uygulanamıyor).');
+    warnings.push(i18n.t('routing.warnings.valhallaFallback'));
   }
 
   // Fallback: OSRM (with avoid area detour waypoints when present)
@@ -740,7 +739,7 @@ export async function calculateRealRoadRoute(
         hasFerry: false
       };
       if (detourPoints.length > 0) {
-        warnings.push('Yasak bölge(ler) nedeniyle rota çevresinden dolandırıldı.');
+        warnings.push(i18n.t('routing.warnings.avoidDetourApplied'));
       }
       const m = await enrichCandidate(cand, costing, options, false);
       return { ...m, provider: 'osrm', alternatives: [], warnings };
@@ -750,7 +749,7 @@ export async function calculateRealRoadRoute(
   }
 
   // Last resort: straight line (clearly flagged)
-  warnings.push('Hiçbir rota motoruna ulaşılamadı — düz çizgi gösteriliyor.');
+  warnings.push(i18n.t('routing.warnings.straightLineFallback'));
   const dist = Number((haversineMeters(from, to) / 1000).toFixed(1));
   return {
     coordinates: [from, to],

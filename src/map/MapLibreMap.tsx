@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTripStore } from '../trip/tripStore';
@@ -81,6 +82,7 @@ const LAYER_STYLES: Record<string, string | maplibregl.StyleSpecification> = {
 };
 
 export const MapLibreMap: React.FC = () => {
+  const { t } = useTranslation();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<MapLibreInstance | null>(null);
   const markersRef = useRef<MapLibreMarker[]>([]);
@@ -198,25 +200,26 @@ export const MapLibreMap: React.FC = () => {
         // Add Weather Badges if enabled
         if (showWeatherOverlay && span.weatherPoints) {
           span.weatherPoints.forEach((wp) => {
+            const conditionLabel = t(`weather.wmo.${wp.weatherCode}`, { defaultValue: wp.conditionLabel });
             const el = document.createElement('div');
             el.className = `weather-badge ${wp.warning ? 'warning' : ''}`;
             el.innerHTML = `
               <div class="weather-temp">${wp.temperature}°C</div>
               <div class="weather-wind">
                 <span class="wind-arrow" style="transform: rotate(${wp.windDirection}deg)">↑</span>
-                <span>${wp.windSpeed} km/s</span>
+                <span>${wp.windSpeed} ${t('elevationWeather.kmPerHour')}</span>
               </div>
-              ${wp.warning ? '<div class="weather-alert">⚠️ Rüzgar</div>' : ''}
+              ${wp.warning ? `<div class="weather-alert">⚠️ ${t('weather.wind')}</div>` : ''}
             `;
 
             const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`
               <div class="popup-content weather-popup">
-                <div class="popup-title">🕒 ${wp.time} - Beklenen Hava</div>
-                <div><strong>Durum:</strong> ${wp.conditionLabel}</div>
-                <div><strong>Sıcaklık:</strong> ${wp.temperature}°C</div>
-                <div><strong>Rüzgar:</strong> ${wp.windSpeed} km/s (Yön: ${wp.windDirection}°)</div>
-                <div><strong>Yağış:</strong> ${wp.precipitationAmount} mm (%${wp.precipitationProbability})</div>
-                ${wp.warning === 'wind' ? '<div class="alert-box">⚠️ Motosiklet/Karavan: Şiddetli yan rüzgar riski!</div>' : ''}
+                <div class="popup-title">🕒 ${wp.time} - ${t('weather.expectedWeather')}</div>
+                <div><strong>${t('weather.status')}:</strong> ${conditionLabel}</div>
+                <div><strong>${t('weather.temperature')}:</strong> ${wp.temperature}°C</div>
+                <div><strong>${t('weather.wind')}:</strong> ${wp.windSpeed} ${t('elevationWeather.kmPerHour')} (${t('weather.direction')}: ${wp.windDirection}°)</div>
+                <div><strong>${t('weather.precipitation')}:</strong> ${wp.precipitationAmount} mm (%${wp.precipitationProbability})</div>
+                ${wp.warning === 'wind' ? `<div class="alert-box">⚠️ ${t('elevationWeather.windWarning')}</div>` : ''}
               </div>
             `);
 
@@ -391,12 +394,12 @@ export const MapLibreMap: React.FC = () => {
           <div class="poi-popup-header">
             <strong>🛡️ ${area.label}</strong>
             <span class="poi-tag" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;">
-              ${area.radiusKm ? `${area.radiusKm} km Yarıçap` : 'Yasak Bölge'}
+              ${area.radiusKm ? t('avoid.avoidTag', { radius: `${area.radiusKm} km` }) : t('avoid.avoidAreaDefaultName')}
             </span>
           </div>
           <div class="poi-popup-actions" style="margin-top:8px;">
             <button class="btn-popup delete-avoid-btn" style="background:#fff1f2;color:#be123c;border-color:#fecdd3;">
-              🗑️ Yasak Bölgeyi Sil
+              🗑️ ${t('avoid.deleteAvoidArea')}
             </button>
           </div>
         `;
@@ -449,18 +452,18 @@ export const MapLibreMap: React.FC = () => {
         <div class="poi-popup-header">
           <strong>${poi.label}</strong>
           <span class="poi-tag ${poi.isGlobal ? 'tag-global' : 'tag-trip'}">
-            ${poi.isGlobal ? '🌐 Global POI' : '📍 Seyahat POI'}
+            ${poi.isGlobal ? `🌐 ${t('poi.globalTitle')}` : `📍 ${t('poi.tripSpecificTitle')}`}
           </span>
         </div>
-        <div class="poi-popup-coords">${poi.coordinates[1].toFixed(4)}° K, ${poi.coordinates[0].toFixed(4)}° D</div>
+        <div class="poi-popup-coords">${poi.coordinates[1].toFixed(4)}°, ${poi.coordinates[0].toFixed(4)}°</div>
         <div class="poi-popup-actions">
-          <button class="btn-popup start-route-btn">🚩 Buradan Başla</button>
-          <button class="btn-popup route-to-btn">🏁 Buraya Rota Oluştur</button>
+          <button class="btn-popup start-route-btn">🚩 ${t('contextMenu.startHere')}</button>
+          <button class="btn-popup route-to-btn">🏁 ${t('contextMenu.routeToHere')}</button>
           <button class="btn-popup toggle-global-btn">
-            ${poi.isGlobal ? '📍 Seyahate Özel Yap' : '🌐 Global Yap'}
+            ${poi.isGlobal ? `📍 ${t('poi.makeTripSpecific')}` : `🌐 ${t('poi.makeGlobal')}`}
           </button>
-          <button class="btn-popup copy-trip-btn">📋 Başka Seyahate Kopyala</button>
-          <button class="btn-popup delete-poi-btn">🗑️ Sil</button>
+          <button class="btn-popup copy-trip-btn">📋 ${t('poi.copyToAnotherTrip')}</button>
+          <button class="btn-popup delete-poi-btn">🗑️ ${t('actions.delete')}</button>
         </div>
       `;
 
@@ -783,18 +786,18 @@ export const MapLibreMap: React.FC = () => {
       {/* Floating Destination Picker Guide Banner */}
       {pendingStartPoint && (
         <div className="destination-picker-banner">
-          <div className="banner-badge">🚩 BAŞLANGIÇ SEÇİLDİ</div>
+          <div className="banner-badge">{t('destinationBanner.startSelected')}</div>
           <div className="banner-text">
             <strong>{pendingStartPoint.label}</strong>
-            <span className="banner-sub">Rotayı oluşturmak için haritada hedef noktaya veya bir POI'ye tıklayın.</span>
+            <span className="banner-sub">{t('destinationBanner.subText')}</span>
           </div>
           <button
             className="btn-banner-cancel"
             onClick={() => setPendingStartPoint(null)}
-            title="İptal Et (Esc)"
+            title={t('destinationBanner.cancel')}
           >
             <X size={14} />
-            <span>İptal</span>
+            <span>{t('actions.cancel')}</span>
           </button>
         </div>
       )}
@@ -803,7 +806,7 @@ export const MapLibreMap: React.FC = () => {
       {isCalculatingRoute && (
         <div className="routing-calculating-badge">
           <span className="spinner" />
-          <span>Yol Ağı Rotası Hesaplanıyor...</span>
+          <span>{t('routing.calculating')}</span>
         </div>
       )}
 

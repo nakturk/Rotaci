@@ -1,8 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTripStore } from '../trip/tripStore';
 import { X, Copy, MapPin, Calendar, Route, Check } from 'lucide-react';
 
 export const CopyPoiModal: React.FC = () => {
+  const { t } = useTranslation();
   const {
     copyingPoiModal,
     setCopyingPoiModal,
@@ -16,7 +18,7 @@ export const CopyPoiModal: React.FC = () => {
 
   const handleCopy = (targetTripId: string, targetTripName: string) => {
     copyPoiToTrip(copyingPoiModal.id, targetTripId);
-    showToast(`"📍 ${copyingPoiModal.label}" başarıyla "${targetTripName}" seyahatine kopyalandı.`);
+    showToast(t('copyModal.successToast', { poi: copyingPoiModal.label, trip: targetTripName }));
     setCopyingPoiModal(null);
   };
 
@@ -29,7 +31,7 @@ export const CopyPoiModal: React.FC = () => {
               <Copy size={18} />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-white">Başka Seyahate Kopyala</h3>
+              <h3 className="text-base font-semibold text-white">{t('copyModal.title')}</h3>
               <p className="text-xs text-slate-400">
                 <MapPin size={12} className="inline mr-1 text-amber" />
                 <strong>{copyingPoiModal.label}</strong>
@@ -39,7 +41,7 @@ export const CopyPoiModal: React.FC = () => {
           <button
             onClick={() => setCopyingPoiModal(null)}
             className="btn-icon-subtle"
-            title="Kapat"
+            title={t('actions.close')}
           >
             <X size={18} />
           </button>
@@ -47,7 +49,7 @@ export const CopyPoiModal: React.FC = () => {
 
         <div className="modal-body p-4">
           <p className="text-xs text-slate-300 mb-3">
-            Bu POI noktasını aktarmak istediğiniz hedef seyahati seçin:
+            {t('copyModal.prompt')}
           </p>
 
           <div className="copy-trips-list">
@@ -57,22 +59,23 @@ export const CopyPoiModal: React.FC = () => {
                 (sum, d) => sum + d.spans.reduce((sSum, sp) => sSum + sp.distanceKm, 0),
                 0
               );
+              const tripDisplayName = targetTrip.name || t('copyModal.untitledTrip');
 
               return (
                 <div
                   key={targetTrip.id}
                   className={`copy-trip-item ${isCurrent ? 'is-current' : ''}`}
-                  onClick={() => handleCopy(targetTrip.id, targetTrip.name || 'Seyahat')}
+                  onClick={() => handleCopy(targetTrip.id, tripDisplayName)}
                 >
                   <div className="copy-trip-info">
                     <div className="copy-trip-title-row">
-                      <span className="copy-trip-title">{targetTrip.name || 'İsimsiz Seyahat'}</span>
-                      {isCurrent && <span className="copy-trip-current-badge">Şu anki</span>}
+                      <span className="copy-trip-title">{tripDisplayName}</span>
+                      {isCurrent && <span className="copy-trip-current-badge">{t('copyModal.currentBadge')}</span>}
                     </div>
                     <div className="copy-trip-meta">
                       <span>
                         <Calendar size={11} className="inline mr-1" />
-                        {targetTrip.days.length} Gün
+                        {t('trip.totalDays', { count: targetTrip.days.length })}
                       </span>
                       <span>
                         <Route size={11} className="inline mr-1" />
@@ -90,11 +93,11 @@ export const CopyPoiModal: React.FC = () => {
                     className="btn btn-sm btn-primary copy-select-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCopy(targetTrip.id, targetTrip.name || 'Seyahat');
+                      handleCopy(targetTrip.id, tripDisplayName);
                     }}
                   >
                     <Check size={14} className="mr-1" />
-                    Kopyala
+                    {t('copyModal.copyBtn')}
                   </button>
                 </div>
               );
@@ -108,7 +111,7 @@ export const CopyPoiModal: React.FC = () => {
             onClick={() => setCopyingPoiModal(null)}
             className="btn btn-secondary w-full"
           >
-            İptal
+            {t('actions.cancel')}
           </button>
         </div>
       </div>

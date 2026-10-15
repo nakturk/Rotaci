@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTripStore } from '../trip/tripStore';
 import {
   TrendingUp,
@@ -17,6 +18,7 @@ import {
 import { getWmoInfo } from '../weather/weatherService';
 
 export const ElevationWeatherPanel: React.FC = () => {
+  const { t } = useTranslation();
   const {
     trip,
     activeDayId,
@@ -50,7 +52,11 @@ export const ElevationWeatherPanel: React.FC = () => {
 
   const curvature = currentSpan.curvatureScore ?? 45;
   const curvatureLabel =
-    curvature > 85 ? 'Bol Virajlı (Dağ/Kıyı)' : curvature > 50 ? 'Orta Virajlı' : 'Düz / Rahat';
+    curvature > 85
+      ? t('inspector.twistyMountain')
+      : curvature > 50
+      ? t('inspector.mediumTwisty')
+      : t('inspector.straightHighway');
 
   const surface = currentSpan.surfaceBreakdown || { paved: 88, gravel: 10, dirt: 2 };
 
@@ -104,19 +110,19 @@ export const ElevationWeatherPanel: React.FC = () => {
           </div>
 
           <div className="stat-chip">
-            <span>Maks Eğim: <strong>%{currentSpan.maxGradePercent}</strong></span>
+            <span>{t('elevationWeather.maxGrade')} <strong>%{currentSpan.maxGradePercent}</strong></span>
           </div>
 
           {/* Curvature Score Badge */}
-          <div className="stat-chip curvature-chip" title="Açı değişimi / km oranı (Kurviger algoritması)">
+          <div className="stat-chip curvature-chip" title={t('elevationWeather.curvatureAlgorithm')}>
             <Compass size={14} className="chip-icon text-pink" />
-            <span>Viraj: <strong>{curvature}</strong> ({curvatureLabel})</span>
+            <span>{t('elevationWeather.curvature')} <strong>{curvature}</strong> ({curvatureLabel})</span>
           </div>
 
           {/* Surface Breakdown Badge */}
-          <div className="stat-chip surface-chip" title={`Yüzey: %${surface.paved} Asfalt, %${surface.gravel} Stabilize, %${surface.dirt} Toprak`}>
+          <div className="stat-chip surface-chip" title={`${t('elevationWeather.surface')} %${surface.paved} ${t('inspector.paved')}, %${surface.gravel} ${t('inspector.gravel')}, %${surface.dirt} ${t('inspector.dirt')}`}>
             <Layers size={14} className="chip-icon text-amber" />
-            <span>Yüzey: <strong>%{surface.paved} Asfalt</strong></span>
+            <span>{t('elevationWeather.surface')} <strong>%{surface.paved} {t('inspector.paved')}</strong></span>
           </div>
         </div>
 
@@ -126,10 +132,10 @@ export const ElevationWeatherPanel: React.FC = () => {
             onClick={() => refreshSpanWeather(currentSpan.id)}
             disabled={isCalculatingRoute}
             className="btn-tiny btn-refresh-weather"
-            title="Open-Meteo'dan güncel hava durumunu yeniden çek"
+            title={t('elevationWeather.refreshWeatherTitle')}
           >
             <RefreshCw size={12} className={isCalculatingRoute ? 'spin' : ''} />
-            <span>Hava Güncelle</span>
+            <span>{t('elevationWeather.refreshWeather')}</span>
           </button>
 
           <div className="timeline-control">
@@ -142,14 +148,14 @@ export const ElevationWeatherPanel: React.FC = () => {
               value={timelineHour}
               onChange={(e) => setTimelineHour(Number(e.target.value))}
               className="timeline-slider"
-              title="Seyahat Saati Kaydırıcısı (Saatlik Hava Durumu Simülasyonu)"
+              title={t('elevationWeather.simHourTitle')}
             />
           </div>
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="btn-tiny btn-collapse-toggle"
-            title={isCollapsed ? 'Paneli Genişlet' : 'Paneli Küçült'}
+            title={isCollapsed ? t('elevationWeather.expandPanel') : t('elevationWeather.collapsePanel')}
           >
             {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -162,11 +168,12 @@ export const ElevationWeatherPanel: React.FC = () => {
           {currentSpan.weatherPoints && currentSpan.weatherPoints.length > 0 && (
             <div className="weather-strip">
           <div className="weather-strip-title">
-            <span>Rota Boyunca Beklenen Hava (Open-Meteo):</span>
+            <span>{t('elevationWeather.expectedWeather')}</span>
           </div>
           <div className="weather-cards-row">
             {currentSpan.weatherPoints.map((wp, idx) => {
               const info = getWmoInfo(wp.weatherCode);
+              const conditionLabel = t(`weather.wmo.${wp.weatherCode}`, { defaultValue: wp.conditionLabel || info.label });
               return (
                 <div key={idx} className={`weather-mini-card ${wp.warning ? 'has-warning' : ''}`}>
                   <div className="card-top">
@@ -177,26 +184,26 @@ export const ElevationWeatherPanel: React.FC = () => {
                     <span className="w-temp">
                       <Thermometer size={12} className="inline text-amber" /> {wp.temperature}°C
                     </span>
-                    <span className="w-condition">{wp.conditionLabel}</span>
+                    <span className="w-condition">{conditionLabel}</span>
                   </div>
                   <div className="w-details">
-                    <span title="Rüzgar Hızı ve Yönü">
-                      <Wind size={11} className="inline text-sky" /> {wp.windSpeed} km/s
+                    <span title={t('elevationWeather.windSpeedAndDir')}>
+                      <Wind size={11} className="inline text-sky" /> {wp.windSpeed} {t('elevationWeather.kmPerHour')}
                     </span>
-                    <span title="Yağış Miktarı & Olasılığı">
+                    <span title={t('elevationWeather.precipAmountAndProb')}>
                       <Droplets size={11} className="inline text-indigo" /> {wp.precipitationAmount}mm (%{wp.precipitationProbability})
                     </span>
                   </div>
                   {wp.warning === 'wind' && (
                     <div className="card-warning-tag">
                       <AlertTriangle size={11} className="inline mr-1" />
-                      Yan Rüzgar Riski
+                      {t('elevationWeather.windWarning')}
                     </div>
                   )}
                   {wp.warning === 'freeze' && (
                     <div className="card-warning-tag freeze">
                       <AlertTriangle size={11} className="inline mr-1" />
-                      Don / Buzlanma Riski
+                      {t('elevationWeather.freezeWarning')}
                     </div>
                   )}
                 </div>
@@ -318,17 +325,17 @@ export const ElevationWeatherPanel: React.FC = () => {
               left: `${Math.min(Math.max(hoverInfo.x * (window.innerWidth > 900 ? 0.9 : 0.8), 20), 720)}px`
             }}
           >
-            <div><strong>Konum:</strong> {hoverInfo.distance.toFixed(1)} km</div>
-            <div><strong>Yükseklik:</strong> {hoverInfo.elevation} m</div>
-            <div><strong>Eğim:</strong> %{hoverInfo.grade}</div>
+            <div><strong>{t('elevationWeather.location')}</strong> {hoverInfo.distance.toFixed(1)} km</div>
+            <div><strong>{t('elevationWeather.elevation')}</strong> {hoverInfo.elevation} m</div>
+            <div><strong>{t('elevationWeather.grade')}</strong> %{hoverInfo.grade}</div>
           </div>
         )}
 
         {/* Legend */}
         <div className="slope-legend">
-          <span className="legend-item"><span className="dot bg-emerald" /> Düz (&lt;%3)</span>
-          <span className="legend-item"><span className="dot bg-amber" /> Orta (%3-6)</span>
-          <span className="legend-item"><span className="dot bg-rose" /> Dik (&gt;%6)</span>
+          <span className="legend-item"><span className="dot bg-emerald" /> {t('elevationWeather.slopeFlat')}</span>
+          <span className="legend-item"><span className="dot bg-amber" /> {t('elevationWeather.slopeModerate')}</span>
+          <span className="legend-item"><span className="dot bg-rose" /> {t('elevationWeather.slopeSteep')}</span>
         </div>
       </div>
         </>

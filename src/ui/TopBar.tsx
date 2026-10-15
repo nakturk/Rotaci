@@ -127,13 +127,13 @@ ${gpxPoints}
 
         {/* Trip Switcher & Editable Trip Title */}
         <div className="trip-switcher-wrapper">
-          <div className="trip-name-input-group" title="Seyahat Adını Değiştirmek İçin Yazın">
+          <div className="trip-name-input-group" title={t('app.editTripNameTitle')}>
             <input
               type="text"
               value={trip.name}
               onChange={(e) => setTripName(e.target.value)}
               className="trip-name-input"
-              placeholder="Seyahat Adı..."
+              placeholder={t('app.tripNamePlaceholder')}
             />
             <Edit2 size={13} className="trip-name-edit-icon" />
           </div>
@@ -141,10 +141,10 @@ ${gpxPoints}
           <button
             onClick={() => setSwitcherOpen(!switcherOpen)}
             className={`btn-trip-switcher ${switcherOpen ? 'active' : ''}`}
-            title="Kayıtlı Seyahatler Menüsü"
+            title={t('app.tripsMenuTitle')}
           >
             <FolderKanban size={15} />
-            <span className="switcher-text">Seyahatler</span>
+            <span className="switcher-text">{t('app.tripsMenu')}</span>
             <span className="switcher-count">{savedTrips.length}</span>
             <ChevronDown size={14} className={`chevron-icon ${switcherOpen ? 'rotate' : ''}`} />
           </button>
@@ -153,17 +153,17 @@ ${gpxPoints}
           {switcherOpen && (
             <div className="trip-switcher-dropdown" onClick={(e) => e.stopPropagation()}>
               <div className="switcher-header">
-                <span className="switcher-title">📁 Kayıtlı Seyahatler ({savedTrips.length})</span>
+                <span className="switcher-title">📁 {t('app.savedTrips')} ({savedTrips.length})</span>
                 <button
                   className="btn-create-trip-tiny"
                   onClick={() => {
                     newTrip();
                     setSwitcherOpen(false);
                   }}
-                  title="Yeni Seyahat Başlat"
+                  title={t('app.startNewTrip')}
                 >
                   <PlusCircle size={14} />
-                  <span>Yeni Seyahat</span>
+                  <span>{t('app.newTrip')}</span>
                 </button>
               </div>
 
@@ -189,7 +189,7 @@ ${gpxPoints}
                         <div className="trip-item-info">
                           <span className="trip-item-name">{st.name}</span>
                           <span className="trip-item-meta">
-                            {totalDays} Gün • {totalSpans} Parça • {st.startDate || 'Tarihsiz'}
+                            {t('app.dayCount', { count: totalDays })} • {t('app.spanCount', { count: totalSpans })} • {st.startDate || t('app.noDate')}
                           </span>
                         </div>
                       </div>
@@ -198,7 +198,7 @@ ${gpxPoints}
                         <button
                           onClick={() => duplicateTrip(st.id)}
                           className="btn-item-action text-sky"
-                          title="Seyahati Klonla / Kopyala"
+                          title={t('app.duplicateTrip')}
                         >
                           <Copy size={13} />
                         </button>
@@ -206,7 +206,7 @@ ${gpxPoints}
                           <button
                             onClick={() => deleteTrip(st.id)}
                             className="btn-item-action text-rose"
-                            title="Seyahati Sil"
+                            title={t('app.deleteTrip')}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -224,10 +224,10 @@ ${gpxPoints}
                     setSwitcherOpen(false);
                   }}
                   className="btn-restore-sample"
-                  title="Örnek Ege Kıyı & Antik Kentler Seyahatini Ekler"
+                  title={t('app.restoreSampleTripDesc')}
                 >
                   <RotateCcw size={13} />
-                  <span>Örnek Ege Seyahatini Ekle</span>
+                  <span>{t('app.restoreSampleTrip')}</span>
                 </button>
               </div>
             </div>
@@ -240,7 +240,7 @@ ${gpxPoints}
             onClick={undo}
             disabled={!canUndo}
             className={`btn-icon-subtle ${!canUndo ? 'disabled' : ''}`}
-            title="Geri Al (Ctrl+Z)"
+            title={t('app.undo')}
           >
             <Undo2 size={16} />
           </button>
@@ -248,7 +248,7 @@ ${gpxPoints}
             onClick={redo}
             disabled={!canRedo}
             className={`btn-icon-subtle ${!canRedo ? 'disabled' : ''}`}
-            title="Yinele (Ctrl+Y)"
+            title={t('app.redo')}
           >
             <Redo2 size={16} />
           </button>
@@ -278,34 +278,34 @@ ${gpxPoints}
         <button
           onClick={toggle3dTerrain}
           className={`btn-toggle ${is3dTerrain ? 'active' : ''}`}
-          title="3D Arazi / Yükselti"
+          title={t('app.terrain3dTitle')}
         >
           <Box size={16} />
-          <span>{t('map.terrain3d')}</span>
+          <span>{t('app.terrain3d')}</span>
         </button>
 
         {/* Weather Overlay Toggle */}
         <button
           onClick={toggleWeatherOverlay}
           className={`btn-toggle ${showWeatherOverlay ? 'active' : ''}`}
-          title="Hava Durumu ve Rüzgar Bilgisi"
+          title={t('app.weatherBadgesTitle')}
         >
           <CloudSun size={16} />
-          <span>Hava Rozetleri</span>
+          <span>{t('app.weatherBadges')}</span>
         </button>
 
         <div className="divider-vertical" />
 
         {/* Language Switcher */}
-        <button onClick={toggleLanguage} className="btn-secondary" title="Dili Değiştir">
+        <button onClick={toggleLanguage} className="btn-secondary" title={t('app.switchLanguage')}>
           <Languages size={15} />
           <span className="uppercase font-semibold">{i18n.language}</span>
         </button>
 
         {/* Export GPX Button */}
-        <button onClick={handleExportGpx} className="btn-primary" title="GPX Olarak İndir">
+        <button onClick={handleExportGpx} className="btn-primary" title={t('app.downloadGpxTitle')}>
           <Download size={15} />
-          <span>GPX İndir</span>
+          <span>{t('app.downloadGpx')}</span>
         </button>
       </div>
     </header>

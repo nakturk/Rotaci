@@ -99,7 +99,7 @@ export const MapContextMenu: React.FC = () => {
     setContextMenu(null);
     const startPoint = {
       id: `p-${Date.now()}-start`,
-      label: poiLabel || `Başlangıç (${lat.toFixed(3)}, ${lng.toFixed(3)})`,
+      label: poiLabel || `${t('poi.startPointLabel')} (${lat.toFixed(3)}, ${lng.toFixed(3)})`,
       coordinates: activeLngLat
     };
     setPendingStartPoint(startPoint);
@@ -117,7 +117,7 @@ export const MapContextMenu: React.FC = () => {
   const handleOpenAvoidModal = () => {
     setEditingAvoidId(null);
     setAvoidCoords(activeLngLat);
-    setAvoidName(`Yasak Bölge (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+    setAvoidName(`${t('avoid.avoidAreaDefaultName')} (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
     setAvoidRadiusKm(2);
     setAvoidIsGlobal(false);
     setAvoidModalOpen(true);
@@ -201,7 +201,7 @@ export const MapContextMenu: React.FC = () => {
   // Open POI Modal (immediately closes the context menu dropdown so it never stays on top)
   const handleOpenPoiModal = () => {
     setPoiCoords(activeLngLat);
-    setPoiName(`Nokta (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
+    setPoiName(`${t('poi.pointDefaultName')} (${lat.toFixed(3)}, ${lng.toFixed(3)})`);
     setPoiCategory('viewpoint');
     setPoiIsGlobal(false);
     setPoiModalOpen(true);
@@ -267,12 +267,12 @@ export const MapContextMenu: React.FC = () => {
           <div className="menu-header">
             <span>
               {isAvoidArea
-                ? `🛡️ ${avoidLabel || 'Yasak Bölge'}`
+                ? `🛡️ ${avoidLabel || t('avoid.avoidAreaDefaultName')}`
                 : poiLabel
                 ? `📍 ${poiLabel}`
                 : `${lat.toFixed(4)}, ${lng.toFixed(4)}`}
             </span>
-            <button onClick={() => setContextMenu(null)} className="menu-close-btn" title="Kapat">
+            <button onClick={() => setContextMenu(null)} className="menu-close-btn" title={t('actions.close')}>
               <X size={14} />
             </button>
           </div>
@@ -285,7 +285,7 @@ export const MapContextMenu: React.FC = () => {
                   onClick={handleEditAvoidArea}
                 >
                   <Sliders size={16} className="text-rose" />
-                  <span>📏 Boyutu / Yarıçapı Düzenle</span>
+                  <span>{t('contextMenu.editAvoidArea')}</span>
                 </button>
 
                 <button
@@ -293,12 +293,12 @@ export const MapContextMenu: React.FC = () => {
                   onClick={handleToggleAvoidGlobal}
                 >
                   <Globe size={16} className={isCurrentAvoidGlobal ? 'text-amber' : 'text-rose'} />
-                  <span>{isCurrentAvoidGlobal ? '📍 Bu Seyahate Özel Yap' : '🌐 Global Yasak Bölge Yap'}</span>
+                  <span>{isCurrentAvoidGlobal ? t('contextMenu.makeAvoidTripSpecific') : t('contextMenu.makeAvoidGlobal')}</span>
                 </button>
 
                 <button className="menu-item subtle text-rose" onClick={handleDeleteAvoidArea}>
                   <Trash2 size={16} />
-                  <span>🗑️ Yasak Bölgeyi Sil</span>
+                  <span>{t('contextMenu.deleteAvoidArea')}</span>
                 </button>
 
                 <div className="menu-divider" />
@@ -340,7 +340,7 @@ export const MapContextMenu: React.FC = () => {
                     }}
                   >
                     <Globe size={16} className={isCurrentPoiGlobal ? 'text-amber' : 'text-sky'} />
-                    <span>{isCurrentPoiGlobal ? '📍 Bu Seyahate Özel Yap' : '🌐 Global POI Yap'}</span>
+                    <span>{isCurrentPoiGlobal ? t('contextMenu.makePoiTripSpecific') : t('contextMenu.makePoiGlobal')}</span>
                   </button>
 
                   <button
@@ -353,12 +353,12 @@ export const MapContextMenu: React.FC = () => {
                     }}
                   >
                     <Copy size={16} className="text-emerald" />
-                    <span>📋 Başka Seyahate Kopyala...</span>
+                    <span>{t('contextMenu.copyPoiToTrip')}</span>
                   </button>
 
                   <button className="menu-item subtle text-rose" onClick={handleDeletePoi}>
                     <Trash2 size={16} />
-                    <span>{t('actions.delete')} POI</span>
+                    <span>{t('contextMenu.deletePoi')}</span>
                   </button>
                 </>
               ) : (
@@ -383,7 +383,7 @@ export const MapContextMenu: React.FC = () => {
 
             <button className="menu-item subtle" onClick={handleCopyCoords}>
               {copied ? <Check size={16} className="text-emerald" /> : <Copy size={16} />}
-              <span>{copied ? 'Kopyalandı!' : t('contextMenu.copyCoords')}</span>
+              <span>{copied ? t('contextMenu.copied') : t('contextMenu.copyCoords')}</span>
             </button>
           </div>
         </div>
@@ -394,38 +394,38 @@ export const MapContextMenu: React.FC = () => {
         <div className="modal-backdrop" onClick={handleClosePoiModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>📍 Yeni İlgi Noktası (POI) Ekle</h3>
-              <button onClick={handleClosePoiModal} className="btn-icon-subtle" title="Kapat">
+              <h3>{t('contextMenu.newPoiModalTitle')}</h3>
+              <button onClick={handleClosePoiModal} className="btn-icon-subtle" title={t('actions.close')}>
                 <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSavePoi} className="modal-form">
               <div className="form-group">
-                <label>Nokta Adı</label>
+                <label>{t('contextMenu.poiName')}</label>
                 <input
                   type="text"
                   value={poiName}
                   onChange={(e) => setPoiName(e.target.value)}
-                  placeholder="örn. Evim veya Panoramik Seyir Tepesi"
+                  placeholder={t('contextMenu.poiNamePlaceholder')}
                   autoFocus
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label>Kategori</label>
+                <label>{t('contextMenu.category')}</label>
                 <select
                   value={poiCategory}
                   onChange={(e) => handleCategoryChange(e.target.value as any)}
                 >
-                  <option value="personal">🏠 Evim / Kişisel Nokta (Önerilen: Global)</option>
-                  <option value="viewpoint">🔭 Seyir Noktası / Manzara</option>
-                  <option value="camp">⛺ Kamp Alanı</option>
-                  <option value="hotel">🏨 Otel / Konaklama</option>
-                  <option value="restaurant">🍽️ Restoran / Mola</option>
-                  <option value="fuel">⛽ Benzin İstasyonu</option>
-                  <option value="attraction">⭐ Tarihi / Turistik Yer</option>
+                  <option value="personal">{t('contextMenu.catPersonal')}</option>
+                  <option value="viewpoint">{t('contextMenu.catViewpoint')}</option>
+                  <option value="camp">{t('contextMenu.catCamp')}</option>
+                  <option value="hotel">{t('contextMenu.catHotel')}</option>
+                  <option value="restaurant">{t('contextMenu.catRestaurant')}</option>
+                  <option value="fuel">{t('contextMenu.catFuel')}</option>
+                  <option value="attraction">{t('contextMenu.catAttraction')}</option>
                 </select>
               </div>
 
@@ -437,17 +437,17 @@ export const MapContextMenu: React.FC = () => {
                     onChange={(e) => setPoiIsGlobal(e.target.checked)}
                     className="cursor-pointer"
                   />
-                  <span>🌐 Global POI (Tüm seyahatlerimde görünsün — örn. Evim)</span>
+                  <span>{t('contextMenu.globalPoiCheckbox')}</span>
                 </label>
                 <p className="text-[11px] text-slate-400 mt-1 pl-5 leading-relaxed">
-                  İşaretlendiğinde bu nokta tüm seyahatlerinizde hazır bulunur ve her seyahatte baştan evinizi eklemek zorunda kalmazsınız.
+                  {t('contextMenu.globalPoiHelp')}
                 </p>
               </div>
 
               <div className="form-group">
-                <label>Konum</label>
+                <label>{t('contextMenu.location')}</label>
                 <div className="coords-display">
-                  {lat.toFixed(5)}° K, {lng.toFixed(5)}° D
+                  {lat.toFixed(5)}°, {lng.toFixed(5)}°
                 </div>
               </div>
 
@@ -478,22 +478,22 @@ export const MapContextMenu: React.FC = () => {
                   <ShieldAlert size={18} />
                 </span>
                 <h3 className="text-base font-semibold text-white">
-                  {editingAvoidId ? '🛡️ Yasak Bölgeyi Düzenle' : 'Yeni Yasak Bölge Ekle'}
+                  {editingAvoidId ? t('avoid.editAvoidArea') : t('avoid.newAvoidArea')}
                 </h3>
               </div>
-              <button onClick={handleCloseAvoidModal} className="btn-icon-subtle" title="Kapat">
+              <button onClick={handleCloseAvoidModal} className="btn-icon-subtle" title={t('actions.close')}>
                 <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleSaveAvoidArea} className="modal-form">
               <div className="form-group">
-                <label>Bölge Adı</label>
+                <label>{t('avoid.areaName')}</label>
                 <input
                   type="text"
                   value={avoidName}
                   onChange={(e) => setAvoidName(e.target.value)}
-                  placeholder="örn. Şehir İçi Yoğun Trafik veya Yol Çalışması"
+                  placeholder={t('avoid.areaNamePlaceholder')}
                   autoFocus
                   required
                 />
@@ -502,10 +502,10 @@ export const MapContextMenu: React.FC = () => {
               <div className="form-group">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="mb-0 flex items-center gap-1.5">
-                    <Sliders size={13} className="text-rose" /> Kaçınma Alanı Boyutu
+                    <Sliders size={13} className="text-rose" /> {t('avoid.avoidAreaSize')}
                   </label>
                   <span className="text-xs font-bold text-rose bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                    Yarıçap: {formatRadius(avoidRadiusKm)} (Çap: {formatRadius(avoidRadiusKm * 2)})
+                    {t('avoid.radius')} {formatRadius(avoidRadiusKm)} ({t('avoid.diameter')} {formatRadius(avoidRadiusKm * 2)})
                   </span>
                 </div>
 
@@ -547,17 +547,17 @@ export const MapContextMenu: React.FC = () => {
                     onChange={(e) => setAvoidIsGlobal(e.target.checked)}
                     className="cursor-pointer"
                   />
-                  <span>🌐 Global Yasak Bölge (Tüm seyahatlerimde bu alandan kaçınılsın)</span>
+                  <span>{t('avoid.globalAvoidArea')}</span>
                 </label>
                 <p className="text-[11px] text-slate-400 mt-1 pl-5 leading-relaxed">
-                  İşaretlendiğinde bu alan tüm seyahatlerinizde kalıcı olarak saklanır ve rota hesaplamalarında çevresinden dolanılır.
+                  {t('avoid.globalAvoidAreaDesc')}
                 </p>
               </div>
 
               <div className="form-group">
-                <label>Merkez Konum</label>
+                <label>{t('avoid.centerLocation')}</label>
                 <div className="coords-display">
-                  {lat.toFixed(5)}° K, {lng.toFixed(5)}° D
+                  {lat.toFixed(5)}°, {lng.toFixed(5)}°
                 </div>
               </div>
 
@@ -570,7 +570,7 @@ export const MapContextMenu: React.FC = () => {
                   {t('actions.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" style={{ background: '#e11d48' }}>
-                  {editingAvoidId ? 'Değişiklikleri Kaydet' : 'Yasak Bölgeyi Oluştur'}
+                  {editingAvoidId ? t('avoid.saveChanges') : t('avoid.createAvoidAreaBtn')}
                 </button>
               </div>
             </form>
