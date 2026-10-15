@@ -95,7 +95,9 @@
     "minutesShort": "{{min}} min",
     "spanLineTitle": "Line: {{w}}px · {{style}} ({{source}})",
     "customColorLabel": "Custom Color",
-    "fromDayLabel": "From Day"
+    "fromDayLabel": "From Day",
+    "focusSpanOnMap": "Show & Focus Route on Map",
+    "focusDayOnMap": "Show day's route on map"
   },
   "poi": {
     "globalTitle": "My Global POIs",

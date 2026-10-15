@@ -95,7 +95,9 @@
     "minutesShort": "{{min}} dk",
     "spanLineTitle": "Çizgi: {{w}}px · {{style}} ({{source}})",
     "customColorLabel": "Özel Renk",
-    "fromDayLabel": "Günden"
+    "fromDayLabel": "Günden",
+    "focusSpanOnMap": "Haritada Rotayı Göster & Odaklan",
+    "focusDayOnMap": "Günün rotasını haritada göster"
   },
   "poi": {
     "globalTitle": "Global Noktalarım",

@@ -94,6 +94,7 @@ export const MapLibreMap: React.FC = () => {
     globalPois,
     activeDayId,
     activeSpanId,
+    focusRouteTarget,
     selectedPoiId,
     pendingStartPoint,
     setPendingStartPoint,
@@ -729,6 +730,75 @@ export const MapLibreMap: React.FC = () => {
       }
     }
   }, [hoverElevationCoord]);
+
+  // Focus / FitBounds when a route span or day is selected/clicked
+  useEffect(() => {
+    if (!focusRouteTarget) return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (focusRouteTarget.type === 'span') {
+      let targetSpan: any = null;
+      for (const day of trip.days) {
+        const found = day.spans.find((s) => s.id === focusRouteTarget.id);
+        if (found) {
+          targetSpan = found;
+          break;
+        }
+      }
+
+      if (targetSpan) {
+        const coords: [number, number][] =
+          targetSpan.coordinates && targetSpan.coordinates.length > 0
+            ? targetSpan.coordinates
+            : [targetSpan.from.coordinates, targetSpan.to.coordinates];
+
+        if (coords.length > 1) {
+          const bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
+          coords.forEach((c) => bounds.extend(c));
+          map.fitBounds(bounds, {
+            padding: { top: 70, bottom: 230, left: 70, right: 70 },
+            maxZoom: 14.5,
+            duration: 1000
+          });
+        } else if (coords.length === 1) {
+          map.flyTo({
+            center: coords[0],
+            zoom: 13,
+            duration: 1000
+          });
+        }
+      }
+    } else if (focusRouteTarget.type === 'day') {
+      const targetDay = trip.days.find((d) => d.id === focusRouteTarget.id);
+      if (targetDay) {
+        const allCoords: [number, number][] = [];
+        targetDay.spans.forEach((span) => {
+          if (span.coordinates && span.coordinates.length > 0) {
+            span.coordinates.forEach((c) => allCoords.push(c));
+          } else {
+            allCoords.push(span.from.coordinates, span.to.coordinates);
+          }
+        });
+
+        if (allCoords.length > 1) {
+          const bounds = new maplibregl.LngLatBounds(allCoords[0], allCoords[0]);
+          allCoords.forEach((c) => bounds.extend(c));
+          map.fitBounds(bounds, {
+            padding: { top: 70, bottom: 230, left: 70, right: 70 },
+            maxZoom: 13.5,
+            duration: 1100
+          });
+        } else if (allCoords.length === 1) {
+          map.flyTo({
+            center: allCoords[0],
+            zoom: 12,
+            duration: 1000
+          });
+        }
+      }
+    }
+  }, [focusRouteTarget, trip.days]);
 
   const handleWrapperContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();

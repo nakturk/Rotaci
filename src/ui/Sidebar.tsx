@@ -22,7 +22,8 @@ import {
   Palette,
   Globe,
   Copy,
-  Sliders
+  Sliders,
+  Crosshair
 } from 'lucide-react';
 import { formatRadius } from '../trip/avoidAreaUtils';
 
@@ -156,6 +157,13 @@ export const Sidebar: React.FC = () => {
 
                     {/* Day Actions */}
                   <div className="day-card-actions" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setActiveDay(day.id)}
+                      className="btn-tiny text-sky"
+                      title={t('trip.focusDayOnMap')}
+                    >
+                      <Crosshair size={12} />
+                    </button>
                     <button
                       onClick={() => toggleDayVisibility(day.id)}
                       className={`btn-tiny ${isDayHidden ? 'text-dimmed' : 'text-sky'}`}
@@ -406,6 +414,13 @@ export const Sidebar: React.FC = () => {
                         {isSpanHidden && <span className="hidden-tag">{t('trip.hidden')}</span>}
                       </div>
                       <div className="span-card-tools" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setActiveSpan(span.id)}
+                          className="btn-tiny text-sky"
+                          title={t('trip.focusSpanOnMap')}
+                        >
+                          <Crosshair size={12} />
+                        </button>
                         <button
                           onClick={() => setActiveSpan(span.id)}
                           className={`btn-tiny ${hasSpanCustomStyle ? 'text-pink' : 'text-slate'}`}

@@ -307,6 +307,7 @@ interface TripStore {
   isCalculatingRoute: boolean;
   contextMenu: ContextMenuState | null;
   hoverElevationCoord: [number, number] | null;
+  focusRouteTarget: { type: 'span' | 'day'; id: string; timestamp: number } | null;
 
   // Undo/Redo
   history: Trip[];
@@ -319,6 +320,8 @@ interface TripStore {
   // UI Selection
   setActiveDay: (dayId: string) => void;
   setActiveSpan: (spanId: string | null) => void;
+  focusOnSpan: (spanId: string) => void;
+  focusOnDay: (dayId: string) => void;
   setSelectedPoi: (poiId: string | null) => void;
   setPendingStartPoint: (point: StopPoint | null) => void;
   setMapLayer: (layer: TripStore['mapLayer']) => void;
@@ -423,6 +426,7 @@ export const useTripStore = create<TripStore>((set, get) => {
     isCalculatingRoute: false,
     contextMenu: null,
     hoverElevationCoord: null,
+    focusRouteTarget: null,
 
     // Undo/Redo initial state
     history: [savedTrip],
@@ -472,8 +476,38 @@ export const useTripStore = create<TripStore>((set, get) => {
       }
     },
 
-    setActiveDay: (dayId) => set({ activeDayId: dayId, activeSpanId: null, contextMenu: null, pendingStartPoint: null }),
-    setActiveSpan: (spanId) => set({ activeSpanId: spanId }),
+    setActiveDay: (dayId) => {
+      set({
+        activeDayId: dayId,
+        activeSpanId: null,
+        contextMenu: null,
+        pendingStartPoint: null,
+        focusRouteTarget: { type: 'day', id: dayId, timestamp: Date.now() }
+      });
+    },
+
+    setActiveSpan: (spanId) => {
+      if (!spanId) {
+        set({ activeSpanId: null });
+        return;
+      }
+      const state = get();
+      const parentDay = state.trip.days.find((d) => d.spans.some((s) => s.id === spanId));
+      set({
+        activeDayId: parentDay ? parentDay.id : state.activeDayId,
+        activeSpanId: spanId,
+        focusRouteTarget: { type: 'span', id: spanId, timestamp: Date.now() }
+      });
+    },
+
+    focusOnSpan: (spanId) => {
+      get().setActiveSpan(spanId);
+    },
+
+    focusOnDay: (dayId) => {
+      get().setActiveDay(dayId);
+    },
+
     setSelectedPoi: (poiId) => set({ selectedPoiId: poiId }),
     setPendingStartPoint: (point) => set({ pendingStartPoint: point }),
     setMapLayer: (mapLayer) => set({ mapLayer }),
@@ -707,7 +741,12 @@ export const useTripStore = create<TripStore>((set, get) => {
         d.id === activeDay!.id ? { ...d, spans: [...d.spans, newSpan] } : d
       );
 
-      set({ isCalculatingRoute: false, activeSpanId: newSpan.id, pendingStartPoint: null });
+      set({
+        isCalculatingRoute: false,
+        activeSpanId: newSpan.id,
+        pendingStartPoint: null,
+        focusRouteTarget: { type: 'span', id: newSpan.id, timestamp: Date.now() }
+      });
       commitTrip({ ...state.trip, days: updatedDays });
     },
 
@@ -900,7 +939,11 @@ export const useTripStore = create<TripStore>((set, get) => {
               )
             }));
 
-            set({ isCalculatingRoute: false });
+            set({
+              isCalculatingRoute: false,
+              activeSpanId: spanId,
+              focusRouteTarget: { type: 'span', id: spanId, timestamp: Date.now() }
+            });
             commitTrip({ ...state.trip, days: updatedDays });
             break;
           }
