@@ -97,7 +97,9 @@
     "customColorLabel": "Özel Renk",
     "fromDayLabel": "Günden",
     "focusSpanOnMap": "Haritada Rotayı Göster & Odaklan",
-    "focusDayOnMap": "Günün rotasını haritada göster"
+    "focusDayOnMap": "Günün rotasını haritada göster",
+    "splitSpan": "Rotayı Böl",
+    "splitSpanHint": "Rotayı iki parçaya ayır"
   },
   "poi": {
     "globalTitle": "Global Noktalarım",
@@ -296,6 +298,8 @@
   "contextMenu": {
     "startHere": "Buradan Başla",
     "routeToHere": "Buraya Git (Durak Ekle)",
+    "splitRouteHere": "Rotayı Buradan Böl",
+    "dragToRerouteOrSplit": "Rotayı taşımak ve bölmek için sürükleyin, veya buradan bölmek için tıklayın",
     "addPoiHere": "Yeni POI Ekle",
     "addAvoidAreaHere": "Yasak Bölge Ekle",
     "copyCoords": "Koordinatları Kopyala",

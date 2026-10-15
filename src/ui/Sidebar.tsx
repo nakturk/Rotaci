@@ -23,7 +23,8 @@ import {
   Globe,
   Copy,
   Sliders,
-  Crosshair
+  Crosshair,
+  Scissors
 } from 'lucide-react';
 import { formatRadius } from '../trip/avoidAreaUtils';
 
@@ -60,6 +61,7 @@ export const Sidebar: React.FC = () => {
     toggleDayVisibility,
     updateDayStyle,
     deleteSpan,
+    splitSpan,
     moveSpan,
     toggleSpanVisibility,
     deletePoi,
@@ -427,6 +429,18 @@ export const Sidebar: React.FC = () => {
                           title={t('trip.editSpanStyle')}
                         >
                           <Palette size={12} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (span.coordinates && span.coordinates.length > 2) {
+                              const midCoord = span.coordinates[Math.floor(span.coordinates.length / 2)];
+                              splitSpan(span.id, midCoord);
+                            }
+                          }}
+                          className="btn-tiny text-rose"
+                          title={t('trip.splitSpan')}
+                        >
+                          <Scissors size={12} />
                         </button>
                         <button
                           onClick={() => toggleSpanVisibility(span.id)}

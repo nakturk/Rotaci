@@ -11,6 +11,7 @@ import {
   Trash2,
   Globe,
   Sliders,
+  Scissors,
   X
 } from 'lucide-react';
 import { createCircularPolygon, formatRadius } from '../trip/avoidAreaUtils';
@@ -24,6 +25,7 @@ export const MapContextMenu: React.FC = () => {
     pendingStartPoint,
     setPendingStartPoint,
     addSpanToActiveDay,
+    splitSpan,
     globalPois,
     addPoi,
     deletePoi,
@@ -92,6 +94,15 @@ export const MapContextMenu: React.FC = () => {
       setPendingStartPoint(null);
     }
     await addSpanToActiveDay(activeLngLat, toLabel, fromPoint);
+  };
+
+  // Handle Split Route Here
+  const handleSplitRoute = async () => {
+    if (!contextMenu?.spanId) return;
+    const sId = contextMenu.spanId;
+    const coords = activeLngLat;
+    setContextMenu(null);
+    await splitSpan(sId, coords);
   };
 
   // Handle Start Here (designate starting point and wait for destination)
@@ -304,6 +315,18 @@ export const MapContextMenu: React.FC = () => {
                 <div className="menu-divider" />
               </>
             ) : null}
+
+            {contextMenu?.spanId && (
+              <button
+                className="menu-item primary"
+                onClick={handleSplitRoute}
+                disabled={isCalculatingRoute}
+                title={t('contextMenu.splitRouteHere')}
+              >
+                <Scissors size={16} className="text-pink" />
+                <span>{t('contextMenu.splitRouteHere')}</span>
+              </button>
+            )}
 
             <button
               className="menu-item primary"

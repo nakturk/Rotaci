@@ -291,6 +291,7 @@ interface ContextMenuState {
   poiLabel?: string;
   avoidAreaId?: string;
   avoidAreaLabel?: string;
+  spanId?: string;
 }
 
 interface TripStore {
@@ -350,6 +351,7 @@ interface TripStore {
   moveSpan: (dayId: string, spanId: string, direction: 'up' | 'down') => void;
   toggleSpanVisibility: (spanId: string) => void;
   updateSpanStyle: (spanId: string, style: { color?: string | null; lineWidth?: number | null; lineStyle?: LinePattern | null }) => void;
+  splitSpan: (spanId: string, splitPointCoords: [number, number], label?: string) => Promise<void>;
 
   // POI & Avoid CRUD
   globalPois: POI[];
@@ -1056,6 +1058,180 @@ export const useTripStore = create<TripStore>((set, get) => {
           return updated;
         })
       }));
+      commitTrip({ ...state.trip, days: updatedDays });
+    },
+
+    splitSpan: async (spanId: string, splitPointCoords: [number, number], label?: string) => {
+      const state = get();
+      let targetDay: Day | null = null;
+      let targetSpan: Span | null = null;
+      let spanIndex = -1;
+
+      for (const d of state.trip.days) {
+        const sIdx = d.spans.findIndex((s) => s.id === spanId);
+        if (sIdx !== -1) {
+          targetDay = d;
+          targetSpan = d.spans[sIdx];
+          spanIndex = sIdx;
+          break;
+        }
+      }
+
+      if (!targetDay || !targetSpan) return;
+
+      set({ isCalculatingRoute: true });
+
+      // Determine label: if not supplied, attempt reverse geocode
+      let midLabel = label?.trim();
+      if (!midLabel) {
+        try {
+          midLabel = await reverseGeocode(splitPointCoords[0], splitPointCoords[1]);
+        } catch {
+          midLabel = `Durak (${splitPointCoords[1].toFixed(3)}, ${splitPointCoords[0].toFixed(3)})`;
+        }
+      }
+
+      const midStop: StopPoint = {
+        id: `stop-${Date.now()}`,
+        label: midLabel,
+        coordinates: splitPointCoords,
+        stopDurationMinutes: 15
+      };
+
+      const avoidPolygons = state.trip.avoidAreas?.map((a) => a.coordinates) || [];
+
+      // Calculate departure time for leg 1
+      const [startH, startM] = (targetDay.startTime || '09:00').split(':').map(Number);
+      let depMinutes1 = (startH || 9) * 60 + (startM || 0);
+      for (let i = 0; i < spanIndex; i++) {
+        depMinutes1 += targetDay.spans[i].durationMinutes + (targetDay.spans[i].to.stopDurationMinutes || 0);
+      }
+      const depHourStr1 = String(Math.floor((depMinutes1 % 1440) / 60)).padStart(2, '0');
+      const depMinStr1 = String(depMinutes1 % 60).padStart(2, '0');
+      const departureTime1 = `${depHourStr1}:${depMinStr1}`;
+
+      // Calculate Route 1: targetSpan.from -> midStop
+      const routeRes1 = await calculateRealRoadRoute(
+        targetSpan.from.coordinates,
+        midStop.coordinates,
+        targetSpan.vehicleType,
+        targetSpan.options,
+        avoidPolygons
+      );
+
+      const etaTotalMin1 = depMinutes1 + routeRes1.durationMinutes;
+      const etaHourStr1 = String(Math.floor((etaTotalMin1 % 1440) / 60)).padStart(2, '0');
+      const etaMinStr1 = String(etaTotalMin1 % 60).padStart(2, '0');
+      const calculatedEta1 = `${etaHourStr1}:${etaMinStr1}`;
+
+      const weatherPoints1 = await calculateSpanWeatherPoints(
+        routeRes1.coordinates,
+        targetDay.date,
+        depMinutes1,
+        routeRes1.durationMinutes,
+        targetSpan.vehicleType
+      );
+
+      // Departure time for leg 2 (after 15 min stop)
+      const depMinutes2 = etaTotalMin1 + (midStop.stopDurationMinutes || 15);
+      const depHourStr2 = String(Math.floor((depMinutes2 % 1440) / 60)).padStart(2, '0');
+      const depMinStr2 = String(depMinutes2 % 60).padStart(2, '0');
+      const departureTime2 = `${depHourStr2}:${depMinStr2}`;
+
+      // Calculate Route 2: midStop -> targetSpan.to
+      const routeRes2 = await calculateRealRoadRoute(
+        midStop.coordinates,
+        targetSpan.to.coordinates,
+        targetSpan.vehicleType,
+        targetSpan.options,
+        avoidPolygons
+      );
+
+      const etaTotalMin2 = depMinutes2 + routeRes2.durationMinutes;
+      const etaHourStr2 = String(Math.floor((etaTotalMin2 % 1440) / 60)).padStart(2, '0');
+      const etaMinStr2 = String(etaTotalMin2 % 60).padStart(2, '0');
+      const calculatedEta2 = `${etaHourStr2}:${etaMinStr2}`;
+
+      const weatherPoints2 = await calculateSpanWeatherPoints(
+        routeRes2.coordinates,
+        targetDay.date,
+        depMinutes2,
+        routeRes2.durationMinutes,
+        targetSpan.vehicleType
+      );
+
+      const span1: Span = {
+        ...targetSpan,
+        id: `span-${Date.now()}-1`,
+        from: targetSpan.from,
+        to: midStop,
+        distanceKm: routeRes1.distanceKm,
+        durationMinutes: routeRes1.durationMinutes,
+        ascentMeters: routeRes1.ascentMeters,
+        descentMeters: routeRes1.descentMeters,
+        maxGradePercent: routeRes1.maxGradePercent,
+        curvatureScore: routeRes1.curvatureScore,
+        surfaceBreakdown: routeRes1.surfaceBreakdown,
+        surfaceIsEstimated: routeRes1.surfaceIsEstimated,
+        coordinates: routeRes1.coordinates,
+        elevationProfile: routeRes1.elevationProfile,
+        weatherPoints: weatherPoints1,
+        departureTime: departureTime1,
+        calculatedEta: calculatedEta1,
+        hasToll: routeRes1.hasToll,
+        hasHighway: routeRes1.hasHighway,
+        hasFerry: routeRes1.hasFerry,
+        routingProvider: routeRes1.provider,
+        routingWarnings: routeRes1.warnings,
+        alternatives: routeRes1.alternatives
+      };
+
+      const span2: Span = {
+        ...targetSpan,
+        id: `span-${Date.now()}-2`,
+        from: midStop,
+        to: targetSpan.to,
+        distanceKm: routeRes2.distanceKm,
+        durationMinutes: routeRes2.durationMinutes,
+        ascentMeters: routeRes2.ascentMeters,
+        descentMeters: routeRes2.descentMeters,
+        maxGradePercent: routeRes2.maxGradePercent,
+        curvatureScore: routeRes2.curvatureScore,
+        surfaceBreakdown: routeRes2.surfaceBreakdown,
+        surfaceIsEstimated: routeRes2.surfaceIsEstimated,
+        coordinates: routeRes2.coordinates,
+        elevationProfile: routeRes2.elevationProfile,
+        weatherPoints: weatherPoints2,
+        departureTime: departureTime2,
+        calculatedEta: calculatedEta2,
+        hasToll: routeRes2.hasToll,
+        hasHighway: routeRes2.hasHighway,
+        hasFerry: routeRes2.hasFerry,
+        routingProvider: routeRes2.provider,
+        routingWarnings: routeRes2.warnings,
+        alternatives: routeRes2.alternatives
+      };
+
+      const newSpans: Span[] = [];
+      for (let i = 0; i < targetDay.spans.length; i++) {
+        if (i === spanIndex) {
+          newSpans.push(span1, span2);
+        } else {
+          newSpans.push(targetDay.spans[i]);
+        }
+      }
+      const renumberedSpans = newSpans.map((s, idx) => ({ ...s, order: idx + 1 }));
+
+      const updatedDays = state.trip.days.map((d) =>
+        d.id === targetDay!.id ? { ...d, spans: renumberedSpans } : d
+      );
+
+      set({
+        isCalculatingRoute: false,
+        activeDayId: targetDay.id,
+        activeSpanId: span1.id,
+        focusRouteTarget: { type: 'span', id: span1.id, timestamp: Date.now() }
+      });
       commitTrip({ ...state.trip, days: updatedDays });
     },
 

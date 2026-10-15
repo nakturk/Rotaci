@@ -7,6 +7,7 @@ import { MapContextMenu } from '../ui/MapContextMenu';
 import { X } from 'lucide-react';
 import { getPolygonCenter } from '../trip/avoidAreaUtils';
 import { haversineMeters } from '../routing/routingService';
+import { findClosestPointOnPolyline } from '../trip/routeSplitUtils';
 
 // Set same-origin worker URL for MapLibre
 maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
@@ -99,6 +100,7 @@ export const MapLibreMap: React.FC = () => {
     pendingStartPoint,
     setPendingStartPoint,
     addSpanToActiveDay,
+    splitSpan,
     deletePoi,
     togglePoiGlobal,
     setCopyingPoiModal,
@@ -118,6 +120,135 @@ export const MapLibreMap: React.FC = () => {
   const pendingStartPointRef = useRef(pendingStartPoint);
   pendingStartPointRef.current = pendingStartPoint;
   const pendingMarkerRef = useRef<MapLibreMarker | null>(null);
+
+  const tripRef = useRef(trip);
+  tripRef.current = trip;
+
+  const dragHandleMarkerRef = useRef<MapLibreMarker | null>(null);
+  const isDraggingRouteRef = useRef(false);
+  const dragSpanIdRef = useRef<string | null>(null);
+  const dragStartCoordsRef = useRef<[number, number] | null>(null);
+  const dragCurrentCoordsRef = useRef<[number, number] | null>(null);
+  const hoveredSpanIdRef = useRef<string | null>(null);
+  const hideHandleTimerRef = useRef<any>(null);
+
+  const scheduleHideHandle = () => {
+    if (isDraggingRouteRef.current) return;
+    if (hideHandleTimerRef.current) clearTimeout(hideHandleTimerRef.current);
+    hideHandleTimerRef.current = setTimeout(() => {
+      if (!isDraggingRouteRef.current && dragHandleMarkerRef.current) {
+        dragHandleMarkerRef.current.remove();
+        dragHandleMarkerRef.current = null;
+        hoveredSpanIdRef.current = null;
+      }
+    }, 300);
+  };
+
+  const updateRouteDragHandle = (lngLat: [number, number], spanId: string) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (hideHandleTimerRef.current) {
+      clearTimeout(hideHandleTimerRef.current);
+      hideHandleTimerRef.current = null;
+    }
+
+    hoveredSpanIdRef.current = spanId;
+
+    if (!dragHandleMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'route-drag-handle';
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'route-drag-tooltip';
+      tooltip.textContent = t('contextMenu.dragToRerouteOrSplit');
+      el.appendChild(tooltip);
+
+      el.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const currentMap = mapInstanceRef.current;
+        if (!currentMap) return;
+
+        const currentSpanId = hoveredSpanIdRef.current;
+        if (!currentSpanId) return;
+
+        isDraggingRouteRef.current = true;
+        dragSpanIdRef.current = currentSpanId;
+
+        const markerLngLat = dragHandleMarkerRef.current?.getLngLat() || { lng: lngLat[0], lat: lngLat[1] };
+        const startPoint: [number, number] = [
+          Number(markerLngLat.lng.toFixed(6)),
+          Number(markerLngLat.lat.toFixed(6))
+        ];
+        dragStartCoordsRef.current = startPoint;
+        dragCurrentCoordsRef.current = startPoint;
+
+        el.classList.add('dragging');
+        currentMap.dragPan.disable();
+
+        let fromCoords: [number, number] = startPoint;
+        let toCoords: [number, number] = startPoint;
+        for (const day of tripRef.current.days) {
+          const sp = day.spans.find((s) => s.id === currentSpanId);
+          if (sp) {
+            fromCoords = sp.from.coordinates;
+            toCoords = sp.to.coordinates;
+            break;
+          }
+        }
+
+        const previewGeoJson = {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: [fromCoords, startPoint, toCoords]
+          }
+        };
+
+        const previewSource = currentMap.getSource('route-drag-preview') as maplibregl.GeoJSONSource | undefined;
+        if (previewSource) {
+          previewSource.setData(previewGeoJson as any);
+        } else {
+          currentMap.addSource('route-drag-preview', {
+            type: 'geojson',
+            data: previewGeoJson as any
+          });
+          currentMap.addLayer({
+            id: 'route-drag-preview-line',
+            type: 'line',
+            source: 'route-drag-preview',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: {
+              'line-color': '#0284c7',
+              'line-width': 4,
+              'line-dasharray': [2, 1.5]
+            }
+          });
+        }
+      });
+
+      el.addEventListener('mouseenter', () => {
+        if (hideHandleTimerRef.current) {
+          clearTimeout(hideHandleTimerRef.current);
+          hideHandleTimerRef.current = null;
+        }
+      });
+
+      el.addEventListener('mouseleave', () => {
+        if (!isDraggingRouteRef.current) {
+          scheduleHideHandle();
+        }
+      });
+
+      dragHandleMarkerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat(lngLat)
+        .addTo(map);
+    } else {
+      dragHandleMarkerRef.current.setLngLat(lngLat);
+    }
+  };
 
   // Helper: check if map style is ready to add sources and layers
   const isMapStyleReady = (map: MapLibreInstance | null): boolean => {
@@ -323,8 +454,27 @@ export const MapLibreMap: React.FC = () => {
         map.on('mouseenter', layerId, () => {
           map.getCanvas().style.cursor = 'pointer';
         });
+
+        map.on('mousemove', layerId, (e) => {
+          if (isDraggingRouteRef.current) return;
+          if (e.features && e.features[0]) {
+            const spanId = e.features[0].properties.spanId;
+            for (const day of tripRef.current.days) {
+              const sp = day.spans.find((s) => s.id === spanId);
+              if (sp && sp.coordinates && sp.coordinates.length > 0) {
+                const closest = findClosestPointOnPolyline([e.lngLat.lng, e.lngLat.lat], sp.coordinates);
+                updateRouteDragHandle(closest.point, spanId);
+                break;
+              }
+            }
+          }
+        });
+
         map.on('mouseleave', layerId, () => {
           map.getCanvas().style.cursor = '';
+          if (!isDraggingRouteRef.current) {
+            scheduleHideHandle();
+          }
         });
       });
     }
@@ -587,15 +737,97 @@ export const MapLibreMap: React.FC = () => {
     map.on('load', handleStyleOrLoad);
     map.on('style.load', handleStyleOrLoad);
 
-    // Right-click Context Menu
-    map.on('contextmenu', (e) => {
-      e.preventDefault();
+    // Shared Context Menu Handler with Route & POI Detection
+    const handleContextMenuAt = (x: number, y: number, lngLat: [number, number], targetElement?: HTMLElement | null) => {
+      // Check if right-clicked on an existing POI marker
+      const poiEl = targetElement?.closest('.poi-marker') as HTMLElement | null;
+      const poiId = poiEl?.dataset?.poiId;
+      const allPois = [...globalPois, ...tripRef.current.pois];
+      const poi = poiId ? allPois.find((p) => p.id === poiId) : null;
+
+      // Check if right-clicked on an avoid area
+      let avoidArea = null;
+      try {
+        const renderedAvoids = map.queryRenderedFeatures([x, y], { layers: ['avoid-areas-layer'] });
+        if (renderedAvoids && renderedAvoids.length > 0 && renderedAvoids[0].properties?.id) {
+          avoidArea = tripRef.current.avoidAreas.find((a) => a.id === renderedAvoids[0].properties.id) || null;
+        }
+      } catch {}
+
+      if (!avoidArea && tripRef.current.avoidAreas?.length) {
+        avoidArea = tripRef.current.avoidAreas.find((a) => {
+          const center = a.center || getPolygonCenter(a.coordinates);
+          const radiusM = (a.radiusKm || 2) * 1000;
+          return haversineMeters(lngLat, center) <= radiusM;
+        }) || null;
+      }
+
+      // Check if right-clicked on or near a route line
+      let hitSpanId: string | undefined;
+      let hitSplitCoords: [number, number] | undefined;
+      let minPixelDist = 38; // within 38px of route line
+
+      for (const day of tripRef.current.days) {
+        if (day.isVisible === false) continue;
+        for (const sp of day.spans) {
+          if (sp.isVisible === false || !sp.coordinates || sp.coordinates.length < 2) continue;
+          const closest = findClosestPointOnPolyline(lngLat, sp.coordinates);
+          const projected = map.project(closest.point);
+          const pixelDist = Math.hypot(projected.x - x, projected.y - y);
+          if (pixelDist < minPixelDist) {
+            minPixelDist = pixelDist;
+            hitSpanId = sp.id;
+            hitSplitCoords = closest.point;
+          }
+        }
+      }
+
       setContextMenu({
         visible: true,
-        x: e.point.x,
-        y: e.point.y,
-        lngLat: [e.lngLat.lng, e.lngLat.lat]
+        x,
+        y,
+        lngLat: poi ? poi.coordinates : (hitSplitCoords || lngLat),
+        poiId: poi?.id,
+        poiLabel: poi?.label,
+        avoidAreaId: avoidArea?.id,
+        avoidAreaLabel: avoidArea?.label,
+        spanId: hitSpanId
       });
+    };
+
+    // Right-click Context Menu on map
+    map.on('contextmenu', (e) => {
+      e.preventDefault();
+      handleContextMenuAt(e.point.x, e.point.y, [e.lngLat.lng, e.lngLat.lat], e.originalEvent.target as HTMLElement);
+    });
+
+    // Mousemove for Google Maps route hover handle
+    map.on('mousemove', (e) => {
+      if (isDraggingRouteRef.current) return;
+      let foundSpanId: string | null = null;
+      let foundPoint: [number, number] | null = null;
+      let minPixelDist = 28;
+
+      for (const day of tripRef.current.days) {
+        if (day.isVisible === false) continue;
+        for (const sp of day.spans) {
+          if (sp.isVisible === false || !sp.coordinates || sp.coordinates.length < 2) continue;
+          const closest = findClosestPointOnPolyline([e.lngLat.lng, e.lngLat.lat], sp.coordinates);
+          const projected = map.project(closest.point);
+          const dist = Math.hypot(projected.x - e.point.x, projected.y - e.point.y);
+          if (dist < minPixelDist) {
+            minPixelDist = dist;
+            foundSpanId = sp.id;
+            foundPoint = closest.point;
+          }
+        }
+      }
+
+      if (foundSpanId && foundPoint) {
+        updateRouteDragHandle(foundPoint, foundSpanId);
+      } else {
+        scheduleHideHandle();
+      }
     });
 
     // Close Context Menu on click & handle pending destination selection
@@ -680,16 +912,132 @@ export const MapLibreMap: React.FC = () => {
     }
   }, [pendingStartPoint]);
 
-  // Cancel Pending Start on Escape key
+  // Cancel Pending Start or Route Dragging on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && pendingStartPointRef.current) {
-        setPendingStartPoint(null);
+      if (e.key === 'Escape') {
+        if (pendingStartPointRef.current) {
+          setPendingStartPoint(null);
+        }
+        if (isDraggingRouteRef.current) {
+          isDraggingRouteRef.current = false;
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.dragPan.enable();
+            if (mapInstanceRef.current.getLayer('route-drag-preview-line')) {
+              mapInstanceRef.current.removeLayer('route-drag-preview-line');
+            }
+            if (mapInstanceRef.current.getSource('route-drag-preview')) {
+              mapInstanceRef.current.removeSource('route-drag-preview');
+            }
+          }
+          if (dragHandleMarkerRef.current) {
+            dragHandleMarkerRef.current.remove();
+            dragHandleMarkerRef.current = null;
+          }
+          hoveredSpanIdRef.current = null;
+          dragSpanIdRef.current = null;
+          dragStartCoordsRef.current = null;
+          dragCurrentCoordsRef.current = null;
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setPendingStartPoint]);
+
+  // Window-level mousemove and mouseup for route drag and drop (Google Maps style)
+  useEffect(() => {
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRouteRef.current || !mapInstanceRef.current) return;
+      const map = mapInstanceRef.current;
+      const container = mapContainerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const lngLat = map.unproject([x, y]);
+      const currentPoint: [number, number] = [
+        Number(lngLat.lng.toFixed(6)),
+        Number(lngLat.lat.toFixed(6))
+      ];
+      dragCurrentCoordsRef.current = currentPoint;
+
+      if (dragHandleMarkerRef.current) {
+        dragHandleMarkerRef.current.setLngLat(currentPoint);
+      }
+
+      // Update preview line
+      const currentSpanId = dragSpanIdRef.current;
+      if (currentSpanId) {
+        let fromCoords: [number, number] = currentPoint;
+        let toCoords: [number, number] = currentPoint;
+        for (const day of tripRef.current.days) {
+          const sp = day.spans.find((s) => s.id === currentSpanId);
+          if (sp) {
+            fromCoords = sp.from.coordinates;
+            toCoords = sp.to.coordinates;
+            break;
+          }
+        }
+
+        const previewSrc = map.getSource('route-drag-preview') as maplibregl.GeoJSONSource | undefined;
+        if (previewSrc) {
+          previewSrc.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: [fromCoords, currentPoint, toCoords]
+            }
+          } as any);
+        }
+      }
+    };
+
+    const handleWindowMouseUp = async () => {
+      if (!isDraggingRouteRef.current) return;
+      isDraggingRouteRef.current = false;
+      const map = mapInstanceRef.current;
+      if (map) {
+        map.dragPan.enable();
+        if (map.getLayer('route-drag-preview-line')) {
+          map.removeLayer('route-drag-preview-line');
+        }
+        if (map.getSource('route-drag-preview')) {
+          map.removeSource('route-drag-preview');
+        }
+      }
+
+      const el = dragHandleMarkerRef.current?.getElement();
+      if (el) el.classList.remove('dragging');
+
+      const spanId = dragSpanIdRef.current;
+      const dropCoords = dragCurrentCoordsRef.current;
+
+      // Clean up handle
+      if (dragHandleMarkerRef.current) {
+        dragHandleMarkerRef.current.remove();
+        dragHandleMarkerRef.current = null;
+      }
+      hoveredSpanIdRef.current = null;
+      dragSpanIdRef.current = null;
+      dragStartCoordsRef.current = null;
+      dragCurrentCoordsRef.current = null;
+
+      if (spanId && dropCoords) {
+        await splitSpan(spanId, dropCoords);
+      }
+    };
+
+    window.addEventListener('mousemove', handleWindowMouseMove);
+    window.addEventListener('mouseup', handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [splitSpan]);
 
   // Fly to selected POI
   useEffect(() => {
@@ -837,15 +1185,36 @@ export const MapLibreMap: React.FC = () => {
       }) || null;
     }
 
+    // Check if right-clicked on or near a route line
+    let hitSpanId: string | undefined;
+    let hitSplitCoords: [number, number] | undefined;
+    let minPixelDist = 38;
+
+    for (const day of tripRef.current.days) {
+      if (day.isVisible === false) continue;
+      for (const sp of day.spans) {
+        if (sp.isVisible === false || !sp.coordinates || sp.coordinates.length < 2) continue;
+        const closest = findClosestPointOnPolyline([lngLat.lng, lngLat.lat], sp.coordinates);
+        const projected = map.project(closest.point);
+        const pixelDist = Math.hypot(projected.x - x, projected.y - y);
+        if (pixelDist < minPixelDist) {
+          minPixelDist = pixelDist;
+          hitSpanId = sp.id;
+          hitSplitCoords = closest.point;
+        }
+      }
+    }
+
     setContextMenu({
       visible: true,
       x,
       y,
-      lngLat: poi ? poi.coordinates : [lngLat.lng, lngLat.lat],
+      lngLat: poi ? poi.coordinates : (hitSplitCoords || [lngLat.lng, lngLat.lat]),
       poiId: poi?.id,
       poiLabel: poi?.label,
       avoidAreaId: avoidArea?.id,
-      avoidAreaLabel: avoidArea?.label
+      avoidAreaLabel: avoidArea?.label,
+      spanId: hitSpanId
     });
   };
 

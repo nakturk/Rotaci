@@ -97,7 +97,9 @@
     "customColorLabel": "Custom Color",
     "fromDayLabel": "From Day",
     "focusSpanOnMap": "Show & Focus Route on Map",
-    "focusDayOnMap": "Show day's route on map"
+    "focusDayOnMap": "Show day's route on map",
+    "splitSpan": "Split Route",
+    "splitSpanHint": "Split route into two spans"
   },
   "poi": {
     "globalTitle": "My Global POIs",
@@ -296,6 +298,8 @@
   "contextMenu": {
     "startHere": "Start From Here",
     "routeToHere": "Route To Here (Add Stop)",
+    "splitRouteHere": "Split Route Here",
+    "dragToRerouteOrSplit": "Drag to reroute and split, or click to split here",
     "addPoiHere": "Add New POI Here",
     "addAvoidAreaHere": "Add Avoid Area Here",
     "copyCoords": "Copy Coordinates",
