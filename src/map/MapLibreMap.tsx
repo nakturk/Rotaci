@@ -109,10 +109,15 @@ export const MapLibreMap: React.FC = () => {
     showWeatherOverlay,
     isCalculatingRoute,
     hoverElevationCoord,
+    deleteSpanEndpoint,
     setActiveSpan,
     setSelectedPoi,
     setContextMenu
   } = useTripStore();
+
+  const deleteSpanEndpointRef = useRef(deleteSpanEndpoint);
+  deleteSpanEndpointRef.current = deleteSpanEndpoint;
+  const handleContextMenuAtRef = useRef<((x: number, y: number, lngLat: [number, number], targetElement?: HTMLElement | null) => void) | null>(null);
 
   const renderRouteDataRef = useRef<() => void>(() => {});
   const is3dTerrainRef = useRef(is3dTerrain);
@@ -276,7 +281,7 @@ export const MapLibreMap: React.FC = () => {
 
       const isCurrentDay = day.id === activeDayId;
 
-      day.spans.forEach((span) => {
+      day.spans.forEach((span, sIdx) => {
         // Skip if span is toggled hidden
         if (span.isVisible === false) return;
 
@@ -306,20 +311,79 @@ export const MapLibreMap: React.FC = () => {
           }
         });
 
-        // Add Stop Markers (A -> B)
-        [span.from, span.to].forEach((stop, idx) => {
+        // Add Stop Markers (A -> B or 1 -> 2 -> 3...)
+        const isPrevConnected = sIdx > 0 && haversineMeters(span.from.coordinates, day.spans[sIdx - 1].to.coordinates) < 50;
+
+        const stopsToRender: {
+          stop: typeof span.from;
+          endpoint: 'from' | 'to';
+          labelBadge: string;
+          isIntermediate: boolean;
+        }[] = [];
+
+        if (!isPrevConnected) {
+          const isIntermediate = sIdx > 0;
+          const labelBadge = day.spans.length === 1 ? 'A' : String(sIdx + 1);
+          stopsToRender.push({
+            stop: span.from,
+            endpoint: 'from',
+            labelBadge,
+            isIntermediate
+          });
+        }
+
+        const isLastSpanInDay = sIdx === day.spans.length - 1;
+        const isToIntermediate = !isLastSpanInDay;
+        const toLabelBadge = day.spans.length === 1 ? 'B' : String(sIdx + 2);
+        stopsToRender.push({
+          stop: span.to,
+          endpoint: 'to',
+          labelBadge: toLabelBadge,
+          isIntermediate: isToIntermediate
+        });
+
+        stopsToRender.forEach(({ stop, endpoint, labelBadge, isIntermediate }) => {
           const el = document.createElement('div');
           el.className = 'stop-marker';
+          el.dataset.spanId = span.id;
+          el.dataset.endpoint = endpoint;
+          el.dataset.label = stop.label;
+          el.dataset.intermediate = isIntermediate ? 'true' : 'false';
           el.style.backgroundColor = isCurrentDay ? effectiveColor : '#64748b';
-          el.innerHTML = `<span>${idx === 0 ? 'A' : 'B'}</span>`;
+          el.innerHTML = `<span>${labelBadge}</span>`;
+
+          const deleteBtnText = isIntermediate
+            ? t('trip.deleteStopAndMerge', { defaultValue: 'Bu Durağı Sil & Rotaları Birleştir' })
+            : t('trip.deleteStop', { defaultValue: 'Bu Durağı Sil' });
 
           const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
-            <div class="popup-content">
+            <div class="popup-content stop-popup">
               <strong>${stop.label}</strong>
               <p>${day.title}</p>
               ${stop.stopDurationMinutes ? `<small>Mola: ${stop.stopDurationMinutes} dk</small>` : ''}
+              <div class="popup-actions" style="margin-top: 8px;">
+                <button type="button" class="btn-popup-delete-stop" data-span-id="${span.id}" data-endpoint="${endpoint}">
+                  🗑️ ${deleteBtnText}
+                </button>
+              </div>
             </div>
           `);
+
+          popup.on('open', () => {
+            const popupEl = popup.getElement();
+            const btn = popupEl?.querySelector('.btn-popup-delete-stop') as HTMLButtonElement | null;
+            if (btn) {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                popup.remove();
+                const sId = btn.dataset.spanId;
+                const ep = btn.dataset.endpoint as 'from' | 'to';
+                if (sId && ep) {
+                  await deleteSpanEndpointRef.current(sId, ep);
+                }
+              };
+            }
+          });
 
           const marker = new maplibregl.Marker({ element: el })
             .setLngLat(stop.coordinates)
@@ -745,6 +809,48 @@ export const MapLibreMap: React.FC = () => {
       const allPois = [...globalPois, ...tripRef.current.pois];
       const poi = poiId ? allPois.find((p) => p.id === poiId) : null;
 
+      // Check if right-clicked on an existing stop marker or near a stop
+      let stopInfo: { spanId: string; endpoint: 'from' | 'to'; label: string; isIntermediate: boolean } | undefined;
+      const stopEl = targetElement?.closest('.stop-marker') as HTMLElement | null;
+      if (stopEl && stopEl.dataset.spanId && stopEl.dataset.endpoint) {
+        stopInfo = {
+          spanId: stopEl.dataset.spanId,
+          endpoint: stopEl.dataset.endpoint as 'from' | 'to',
+          label: stopEl.dataset.label || 'Durak',
+          isIntermediate: stopEl.dataset.intermediate === 'true'
+        };
+      } else {
+        let minStopPixelDist = 24;
+        for (const day of tripRef.current.days) {
+          if (day.isVisible === false) continue;
+          day.spans.forEach((sp, sIdx) => {
+            if (sp.isVisible === false) return;
+            const fromProj = map.project(sp.from.coordinates);
+            const fromDist = Math.hypot(fromProj.x - x, fromProj.y - y);
+            if (fromDist < minStopPixelDist) {
+              minStopPixelDist = fromDist;
+              stopInfo = {
+                spanId: sp.id,
+                endpoint: 'from',
+                label: sp.from.label,
+                isIntermediate: sIdx > 0
+              };
+            }
+            const toProj = map.project(sp.to.coordinates);
+            const toDist = Math.hypot(toProj.x - x, toProj.y - y);
+            if (toDist < minStopPixelDist) {
+              minStopPixelDist = toDist;
+              stopInfo = {
+                spanId: sp.id,
+                endpoint: 'to',
+                label: sp.to.label,
+                isIntermediate: sIdx < day.spans.length - 1
+              };
+            }
+          });
+        }
+      }
+
       // Check if right-clicked on an avoid area
       let avoidArea = null;
       try {
@@ -791,9 +897,12 @@ export const MapLibreMap: React.FC = () => {
         poiLabel: poi?.label,
         avoidAreaId: avoidArea?.id,
         avoidAreaLabel: avoidArea?.label,
-        spanId: hitSpanId
+        spanId: hitSpanId,
+        stopInfo
       });
     };
+
+    handleContextMenuAtRef.current = handleContextMenuAt;
 
     // Right-click Context Menu on map
     map.on('contextmenu', (e) => {
@@ -1162,60 +1271,9 @@ export const MapLibreMap: React.FC = () => {
     const y = e.clientY - rect.top;
     const lngLat = map.unproject([x, y]);
 
-    // Check if right-clicked on an existing POI marker
-    const poiEl = target.closest('.poi-marker') as HTMLElement | null;
-    const poiId = poiEl?.dataset?.poiId;
-    const allPois = [...globalPois, ...trip.pois];
-    const poi = poiId ? allPois.find((p) => p.id === poiId) : null;
-
-    // Check if right-clicked on an avoid area
-    let avoidArea = null;
-    try {
-      const renderedAvoids = map.queryRenderedFeatures([x, y], { layers: ['avoid-areas-layer'] });
-      if (renderedAvoids && renderedAvoids.length > 0 && renderedAvoids[0].properties?.id) {
-        avoidArea = trip.avoidAreas.find((a) => a.id === renderedAvoids[0].properties.id) || null;
-      }
-    } catch {}
-
-    if (!avoidArea && trip.avoidAreas?.length) {
-      avoidArea = trip.avoidAreas.find((a) => {
-        const center = a.center || getPolygonCenter(a.coordinates);
-        const radiusM = (a.radiusKm || 2) * 1000;
-        return haversineMeters([lngLat.lng, lngLat.lat], center) <= radiusM;
-      }) || null;
+    if (handleContextMenuAtRef.current) {
+      handleContextMenuAtRef.current(x, y, [lngLat.lng, lngLat.lat], target);
     }
-
-    // Check if right-clicked on or near a route line
-    let hitSpanId: string | undefined;
-    let hitSplitCoords: [number, number] | undefined;
-    let minPixelDist = 38;
-
-    for (const day of tripRef.current.days) {
-      if (day.isVisible === false) continue;
-      for (const sp of day.spans) {
-        if (sp.isVisible === false || !sp.coordinates || sp.coordinates.length < 2) continue;
-        const closest = findClosestPointOnPolyline([lngLat.lng, lngLat.lat], sp.coordinates);
-        const projected = map.project(closest.point);
-        const pixelDist = Math.hypot(projected.x - x, projected.y - y);
-        if (pixelDist < minPixelDist) {
-          minPixelDist = pixelDist;
-          hitSpanId = sp.id;
-          hitSplitCoords = closest.point;
-        }
-      }
-    }
-
-    setContextMenu({
-      visible: true,
-      x,
-      y,
-      lngLat: poi ? poi.coordinates : (hitSplitCoords || [lngLat.lng, lngLat.lat]),
-      poiId: poi?.id,
-      poiLabel: poi?.label,
-      avoidAreaId: avoidArea?.id,
-      avoidAreaLabel: avoidArea?.label,
-      spanId: hitSpanId
-    });
   };
 
   return (

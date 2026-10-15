@@ -99,7 +99,9 @@
     "focusSpanOnMap": "Haritada Rotayı Göster & Odaklan",
     "focusDayOnMap": "Günün rotasını haritada göster",
     "splitSpan": "Rotayı Böl",
-    "splitSpanHint": "Rotayı iki parçaya ayır"
+    "splitSpanHint": "Rotayı iki parçaya ayır",
+    "deleteStopAndMerge": "Bu Durağı Sil & Rotaları Birleştir",
+    "deleteStop": "Bu Durağı Sil"
   },
   "poi": {
     "globalTitle": "Global Noktalarım",
@@ -312,6 +314,8 @@
     "makePoiTripSpecific": "📍 Bu Seyahate Özel Yap",
     "copyPoiToTrip": "📋 Başka Seyahate Kopyala...",
     "deletePoi": "🗑️ POI Sil",
+    "deleteStopAndMerge": "🗑️ Bu Durağı Sil & Rotaları Birleştir",
+    "deleteStop": "🗑️ Bu Durağı Sil",
     "newPoiModalTitle": "📍 Yeni İlgi Noktası (POI) Ekle",
     "poiName": "Nokta Adı",
     "poiNamePlaceholder": "örn. Evim veya Panoramik Seyir Tepesi",

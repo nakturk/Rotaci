@@ -645,11 +645,41 @@ body {
   font-weight: 500;
 }
 
+.node-point .node-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-node-delete {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-node-delete:hover {
+  background: rgba(244, 63, 94, 0.18);
+  color: #f43f5e;
+  opacity: 1;
+}
+
 .node-point .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--accent-sky);
+  flex-shrink: 0;
 }
 
 .node-point.end .dot {
@@ -1330,6 +1360,30 @@ body {
   font-size: 0.75rem;
   color: #fde68a;
   border-radius: 2px;
+}
+
+.btn-popup-delete-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(244, 63, 94, 0.16);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.btn-popup-delete-stop:hover {
+  background: rgba(244, 63, 94, 0.3);
+  color: #ffffff;
+  border-color: rgba(244, 63, 94, 0.6);
 }
 
 /* ==========================================================================

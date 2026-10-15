@@ -61,6 +61,7 @@ export const Sidebar: React.FC = () => {
     toggleDayVisibility,
     updateDayStyle,
     deleteSpan,
+    deleteSpanEndpoint,
     splitSpan,
     moveSpan,
     toggleSpanVisibility,
@@ -483,12 +484,34 @@ export const Sidebar: React.FC = () => {
                     <div className="span-nodes">
                       <div className="node-point start">
                         <span className="dot" />
-                        <span className="node-label">{span.from.label}</span>
+                        <span className="node-label" title={span.from.label}>{span.from.label}</span>
+                        <button
+                          type="button"
+                          className="btn-node-delete"
+                          title={sIdx > 0 ? t('trip.deleteStopAndMerge') : t('trip.deleteStop')}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await deleteSpanEndpoint(span.id, 'from');
+                          }}
+                        >
+                          <Trash2 size={11} />
+                        </button>
                       </div>
                       <div className="node-line" />
                       <div className="node-point end">
                         <span className="dot" />
-                        <span className="node-label">{span.to.label}</span>
+                        <span className="node-label" title={span.to.label}>{span.to.label}</span>
+                        <button
+                          type="button"
+                          className="btn-node-delete"
+                          title={sIdx < activeDay.spans.length - 1 ? t('trip.deleteStopAndMerge') : t('trip.deleteStop')}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await deleteSpanEndpoint(span.id, 'to');
+                          }}
+                        >
+                          <Trash2 size={11} />
+                        </button>
                       </div>
                     </div>
 

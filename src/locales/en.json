@@ -99,7 +99,9 @@
     "focusSpanOnMap": "Show & Focus Route on Map",
     "focusDayOnMap": "Show day's route on map",
     "splitSpan": "Split Route",
-    "splitSpanHint": "Split route into two spans"
+    "splitSpanHint": "Split route into two spans",
+    "deleteStopAndMerge": "Delete Stop & Merge Routes",
+    "deleteStop": "Delete Stop"
   },
   "poi": {
     "globalTitle": "My Global POIs",
@@ -312,6 +314,8 @@
     "makePoiTripSpecific": "📍 Make Trip-Specific",
     "copyPoiToTrip": "📋 Copy to Another Trip...",
     "deletePoi": "🗑️ Delete POI",
+    "deleteStopAndMerge": "🗑️ Delete Stop & Merge Routes",
+    "deleteStop": "🗑️ Delete Stop",
     "newPoiModalTitle": "📍 Add New Point of Interest (POI)",
     "poiName": "Point Name",
     "poiNamePlaceholder": "e.g. My Home or Scenic Viewpoint",

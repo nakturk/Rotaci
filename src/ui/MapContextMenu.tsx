@@ -34,6 +34,7 @@ export const MapContextMenu: React.FC = () => {
     addAvoidArea,
     updateAvoidArea,
     deleteAvoidArea,
+    deleteSpanEndpoint,
     isCalculatingRoute
   } = useTripStore();
 
@@ -103,6 +104,14 @@ export const MapContextMenu: React.FC = () => {
     const coords = activeLngLat;
     setContextMenu(null);
     await splitSpan(sId, coords);
+  };
+
+  // Handle Delete Stop & Merge Routes
+  const handleDeleteStopAndMerge = async () => {
+    if (!contextMenu?.stopInfo) return;
+    const { spanId, endpoint } = contextMenu.stopInfo;
+    setContextMenu(null);
+    await deleteSpanEndpoint(spanId, endpoint);
   };
 
   // Handle Start Here (designate starting point and wait for destination)
@@ -260,7 +269,7 @@ export const MapContextMenu: React.FC = () => {
   const maxH = mapWrapper ? mapWrapper.clientHeight : window.innerHeight;
 
   const menuWidth = 250;
-  const menuHeight = isAvoidArea ? 260 : isPoi ? 240 : 220;
+  const menuHeight = isAvoidArea ? 260 : isPoi ? 240 : contextMenu?.stopInfo ? 260 : 220;
   const safeX = Math.max(10, Math.min(x, maxW - menuWidth - 15));
   const safeY = Math.max(10, Math.min(y, maxH - menuHeight - 15));
 
@@ -279,8 +288,10 @@ export const MapContextMenu: React.FC = () => {
             <span>
               {isAvoidArea
                 ? `🛡️ ${avoidLabel || t('avoid.avoidAreaDefaultName')}`
-                : poiLabel
+                : isPoi
                 ? `📍 ${poiLabel}`
+                : contextMenu?.stopInfo
+                ? `🛑 ${contextMenu.stopInfo.label}`
                 : `${lat.toFixed(4)}, ${lng.toFixed(4)}`}
             </span>
             <button onClick={() => setContextMenu(null)} className="menu-close-btn" title={t('actions.close')}>
@@ -289,6 +300,25 @@ export const MapContextMenu: React.FC = () => {
           </div>
 
           <div className="menu-items">
+            {contextMenu?.stopInfo && (
+              <>
+                <button
+                  className="menu-item subtle text-rose"
+                  onClick={handleDeleteStopAndMerge}
+                  disabled={isCalculatingRoute}
+                  title={contextMenu.stopInfo.isIntermediate ? t('contextMenu.deleteStopAndMerge') : t('contextMenu.deleteStop')}
+                >
+                  <Trash2 size={16} />
+                  <span>
+                    {contextMenu.stopInfo.isIntermediate
+                      ? t('contextMenu.deleteStopAndMerge')
+                      : t('contextMenu.deleteStop')}
+                  </span>
+                </button>
+                <div className="menu-divider" />
+              </>
+            )}
+
             {isAvoidArea ? (
               <>
                 <button
@@ -298,7 +328,6 @@ export const MapContextMenu: React.FC = () => {
                   <Sliders size={16} className="text-rose" />
                   <span>{t('contextMenu.editAvoidArea')}</span>
                 </button>
-
                 <button
                   className="menu-item"
                   onClick={handleToggleAvoidGlobal}
@@ -306,12 +335,10 @@ export const MapContextMenu: React.FC = () => {
                   <Globe size={16} className={isCurrentAvoidGlobal ? 'text-amber' : 'text-rose'} />
                   <span>{isCurrentAvoidGlobal ? t('contextMenu.makeAvoidTripSpecific') : t('contextMenu.makeAvoidGlobal')}</span>
                 </button>
-
                 <button className="menu-item subtle text-rose" onClick={handleDeleteAvoidArea}>
                   <Trash2 size={16} />
                   <span>{t('contextMenu.deleteAvoidArea')}</span>
                 </button>
-
                 <div className="menu-divider" />
               </>
             ) : null}
