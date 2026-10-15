@@ -2,7 +2,7 @@
 
 > Durum: **Taslak v0.3** — Temel mimari ve yol haritası netleşti.
 >
-> **Kesinleşen kararlar:** Ücretsiz & Açık Kaynak (**GPL-3.0**) · Masaüstü (Win/Linux/Mac) · Tauri 2 · Bulut/senkronizasyon yok (tamamen yerel) · Arayüz Türkçe + İngilizce, dinamik çoklu dil · Mobil sürüm hedeflenmiyor · Rota zekâsı & Hava durumu (Faz 2) · Offline harita/rota (Faz 3) · Bütçesiz/imzasız dağıtım (Flathub, winget, Homebrew).
+> **Kesinleşen kararlar:** Ücretsiz & Açık Kaynak (**GPL-3.0**) · Masaüstü (Win/Linux/Mac) · Tauri 2 · Bulut/senkronizasyon yok (tamamen yerel) · Arayüz Türkçe + İngilizce, dinamik çoklu dil · Mobil sürüm hedeflenmiyor · Rota zekâsı & Hava durumu (Faz 2) · Veri alışverişi (Faz 3) · Bütçesiz/imzasız dağıtım (Flathub, winget, Homebrew).
 
 ---
 
@@ -30,7 +30,7 @@ planlarını kaydedip açabildiği ve GPX/KML/KMZ ile dışarı/içeri aktarabil
 | Yerel veritabanı | **SQLite** (`tauri-plugin-sql` veya Rust tarafında `rusqlite`) | Tek dosya, hızlı, yedeklemesi kolay. Geometriler GeoJSON/polyline olarak saklanır. |
 | Durum yönetimi | Zustand + Immer (undo/redo için patch geçmişi) | |
 | Import/Export | `@tmcw/togeojson` (GPX/KML okuma), özel GPX/KML yazıcı, **JSZip** (KMZ) | |
-| Tile önbellek | Rust tarafında HTTP proxy + disk cache (ileride offline mod) | Tile sunucularına yükü azaltır, kullanım politikalarına uyum. |
+| Tile önbellek | Rust tarafında HTTP proxy + disk cache | Tile sunucularına yükü azaltır, kullanım politikalarına uyum sağlar. |
 
 > Alternatif: Electron (daha büyük paket ama saf JS). Tercih değişirse sadece kabuk katmanı etkilenir.
 
@@ -50,80 +50,18 @@ Harita kaynakları **yapılandırılabilir bir katman kataloğu** (JSON) olarak 
 | Uydu (alternatif) | **EOX Sentinel-2 Cloudless** (2016, CC-BY) | Tam açık lisans, daha düşük çözünürlük. |
 | Overlay | Hillshade, OpenRailwayMap, Waymarked Trails (yürüyüş/bisiklet) | İsteğe bağlı katmanlar. |
 
-> [!] Uygulama ücretsiz dağıtılacağı için ticari lisans kısıtları gündemden çıktı. Yine de Esri'nin kullanım şartları (atıf, toplu indirme yasağı) uygulanacak; tamamen açık lisans isteyenler için Sentinel-2 alternatifi sunulur. Tile'lar toplu/offline indirilmez, sadece görüntülenirken önbelleklenir.
+> [!] Uygulama ücretsiz dağıtılacağı için ticari lisans kısıtları gündemden çıktı. Esri'nin kullanım şartları (atıf, toplu indirme yasağı) uygulanır. Tile'lar toplu indirilmez, gezinme sırasında yerel olarak önbelleklenir.
 
-### 3.1 Offline Haritalar ve POI: OpenAndroMaps (Değerlendirme)
+### 3.1 Harita Katmanları ve Önbellek Mimarisi
 
-**OpenAndroMaps (OAM)** ülke/bölge bazında OSM tabanlı offline vektör harita (`.map`, Mapsforge V5) ve POI (`.poi`) dosyaları sunar. Eş yükselti eğrileri haritaya gömülüdür; outdoor/offroad için çok zengindir (patika, track grade, yol yüzeyi, kamp, su kaynağı…). Kendi tema dosyaları (Elevate, Voluntary) ile çizilir.
+Rotacı, çevrimiçi ve anahtarsız modern web harita servislerini kullanır:
+- **OpenFreeMap (Vektör):** Liberty, Bright ve Positron stilleri. Hızlı, keskin ve anahtarsız.
+- **OpenTopoMap:** Eş yükselti eğrili topografik harita.
+- **OpenStreetMap Standard:** Raster taban harita.
+- **Esri World Imagery:** Yüksek çözünürlüklü uydu görüntüsü.
+- **AWS Terrarium DEM:** 3D arazi yükseltisi ve rota eğim profili oluşturma.
 
-**Sonuç: Uygun ve değerli — eklenmeli.** POI kısmı kolay, harita kısmı orta zorlukta.
-
-#### 3.1.1 Harita dosyaları (`.map`)
-
-MapLibre Mapsforge formatını doğrudan okuyamaz; olgun bir JS/Rust Mapsforge render motoru da yok. Seçenekler:
-
-| Seçenek | Açıklama | Artı | Eksi |
-|---|---|---|---|
-| **A. Mapsforge tile sidecar** (önerilen) | Java Mapsforge kütüphanesi ile yerel render sunucusu (örn. açık kaynak `mapsforgesrv`) Tauri *sidecar* olarak çalışır; `.map` + tema → `http://127.0.0.1:port/{z}/{x}/{y}.png` raster tile → MapLibre raster katmanı | Orijinal Elevate/Voluntary temaları birebir, hillshading desteği, kanıtlanmış kütüphane | JRE gerekir → `jlink` ile küçültülmüş runtime paketlenir (~40–60 MB); raster olduğu için döndürmede yazılar döner |
-| B. Rust'ta `.map` okuyucu → MVT | Mapsforge formatı dokümante; Rust tarafında parse edip vektör tile (MVT) üretmek, MapLibre stiliyle çizmek | Java yok, vektör (keskin, döndürülebilir) | Büyük iş; OAM temalarının görünümü yeniden yazılmalı |
-| C. Alternatif offline vektör formatı | OpenFreeMap/Protomaps **PMTiles** bölge çıkartımları | MapLibre ile doğrudan çalışır, en kolay | OAM değil; outdoor detayı ve eş yükselti daha zayıf |
-
-**Plan:** A ile başla (hızlı ve tam uyumlu), C'yi genel offline taban harita olarak ekle; B uzun vadeli opsiyon.
-
-- Kullanıcı `.map` dosyalarını bir klasöre koyar veya uygulamadan seçer; birden çok dosya (ülkeler) tek katmanda birleştirilir (Mapsforge multi-map desteği).
-- Tema seçimi: Elevate / Voluntary / kullanıcı teması (`.xml` / zip) + tema stil menüsü (örn. "Bisiklet", "Yürüyüş", "Araç" overlay'leri).
-- Hillshading için DEM (`.hgt`) klasörü tanımlanabilir.
-- Katman kataloğunda "Offline (OAM)" türü olarak görünür; online katmanlarla aynı seçici kullanılır.
-- İsteğe bağlı: uygulama içinden OAM indirme sayfasındaki dosyaları listeleyip indirme + güncelleme kontrolü (dosyalar uygulamayla **paketlenmez**, kullanıcı indirir).
-
-#### 3.1.2 POI dosyaları (`.poi`)
-
-`.poi` dosyaları aslında **SQLite veritabanıdır** (Mapsforge POI formatı: R-tree uzamsal indeks, kategori ağacı, OSM etiketleri). Rust tarafında `rusqlite` ile doğrudan okunur, Java gerekmez.
-
-- Offline POI arama (isim + kategori), harita görünümü / rota koridoru içinde arama → **Overpass'ın offline alternatifi**.
-- OAM kategori ağacı uygulama POI kategorilerine eşlenir (yakıt, kamp, konaklama, su, seyir noktası…).
-- Bulunan POI tek tıkla seyahat POI'si veya global POI olarak eklenir (kaynak = "OAM", OSM id saklanır).
-
-#### 3.1.3 Offline rota için tamamlayıcı: **BRouter**
-OAM kullanıcılarının offline rota için yaygın kullandığı **BRouter** bu planla çok iyi örtüşür ve RoutingProvider olarak eklenmeli:
-- Aynı Java sidecar içinde (veya public `brouter.de` sunucusu ile online) çalışır; `.rd5` bölge dosyalarıyla tamamen offline.
-- **Yükseklik verisi gömülü** → yokuş maliyeti motor içinde hesaplanır (4.4.2'deki az yokuş tercihi için yerleşik çözüm).
-- Scriptlenebilir profiller: yüzey/offroad tercihi, virajlı yol, taşıt tipi; **nogo bölgeleri** (nokta+yarıçap, poligon) → yasak bölgeler.
-- Zayıf yanı: otomobil/kamyon profilleri bisiklet profilleri kadar olgun değil; araçlar için Valhalla varsayılan kalır.
-
-#### 3.1.4 Lisans
-OAM haritaları OSM verisi (ODbL) üzerine CC-BY-SA lisanslıdır ve sitede **"ücretsiz, özel kullanım için kopyalanabilir"** ifadesi yer alır. Bu yüzden:
-- Dosyalar uygulama ile **dağıtılmaz**; kullanıcı kendisi indirir / içe aktarır.
-- Atfı (© OpenAndroMaps, © OSM katkıcıları) harita üzerinde gösterilir.
-- Uygulama ücretsiz ve açık kaynak olduğundan ve dosyaları kullanıcı kendi indirdiğinden ek bir sorun beklenmiyor.
-
-### 3.2 Offline Mod Mimarisi (Erken Öncelik)
-
-**İlke:** Uygulama internet olmadan da tam işlevli planlama yapabilmeli. Online servisler "varsa daha iyi" katmanıdır.
-
-**Bölge Paketleri (Region Manager):** Kullanıcı haritada bir ülke/bölge seçer veya seyahatin kapsadığı alanı otomatik alır; uygulama gerekli dosyaları indirir ve tek bir "bölge" olarak yönetir:
-
-| İçerik | Kaynak | Kullanım |
-|---|---|---|
-| Vektör harita | OAM `.map` | Offline harita (Elevate/Voluntary tema) |
-| POI | OAM `.poi` | Offline POI arama + koridor sorgusu + basit yer adı araması |
-| Rota verisi | BRouter `.rd5` (5°×5° karolar) | Offline rota (yükseklik dahil) |
-| Yükseklik (DEM) | AWS Terrarium tile'ları (bölge için z≤12 ön-indirme) veya `.hgt` | Eğim profili, hillshade, 3D arazi |
-| Taban harita (opsiyonel) | Protomaps/OpenFreeMap **PMTiles** çıkartımı | Hafif genel harita |
-
-- Disk kullanımı gösterimi, güncelleme kontrolü (yeni OAM/BRouter sürümü), silme.
-- "Bu seyahat için offline hazırla" butonu: tüm günlerin kapsadığı alan için eksik dosyaları listeler ve indirir.
-- Online tile'lar (OSM, OpenTopoMap, Esri) **toplu indirilmez** (kullanım politikaları); yalnızca görüntülenirken önbelleğe alınır.
-
-**Bağlantı durumu ve yedekleme (fallback):**
-- Ağ durumu izlenir; UI'da online/offline göstergesi.
-- Her servis için sıralı sağlayıcı listesi: örn. Rota: *Valhalla (online) → BRouter (yerel)*, POI: *Overpass → OAM .poi*, Arama: *Photon → OAM .poi isim araması*, Harita: *seçili online katman → OAM / PMTiles*.
-- Kullanıcı "her zaman offline çalış" modunu seçebilir (gizlilik / veri tasarrufu).
-
-**Offline sınırlamaları (kullanıcıya açıkça gösterilecek):**
-- Uydu görüntüsü offline yok (yalnızca daha önce bakılan alanlar önbellekte).
-- Adres düzeyinde arama sınırlı (OAM POI isimleri ile yer/işletme araması yapılır).
-- BRouter'ın otomobil/kamyon profilleri Valhalla kadar ayrıntılı değil (boyut/ağırlık kısıtları sınırlı) → araç rotaları internet geldiğinde "yeniden doğrula" seçeneği. Tam offline araç rotası için yerel GraphHopper Faz 5'te.
+**Önbellekleme:** Görüntülenen harita tile'ları yerel disk önbelleğinde saklanarak sunuculara binen yük azaltılır ve gezinti performansı artırılır. Offline harita indirme/paketleme karmaşıklığı yerine doğrudan çevrimiçi harita servisleri ve tile önbellekleme esas alınır.
 
 ---
 
@@ -144,9 +82,7 @@ interface RoutingProvider {
 |---|---|---|
 | **Valhalla** (FOSSGIS public sunucusu) | Ücretsiz, anahtarsız (adil kullanım) | `exclude_polygons` (yasak bölge), `use_tolls`, `use_highways`, `use_ferry`, kamyon boyutları, **motosiklet profili** (`use_trails`), bisiklet/yaya `use_hills` (yokuştan kaçınma), map matching. **Varsayılan.** |
 | **OpenRouteService** | Ücretsiz API anahtarı (~2000 istek/gün) | `avoid_polygons`, `avoid_features` (tollways, ferries, highways), HGV (yükseklik/ağırlık/genişlik/dingil/tehlikeli madde). |
-| **OSRM** (public demo) | Ücretsiz | Hızlı, basit; kısıtlı seçenek — yedek motor. |
-| **BRouter** (public `brouter.de` veya yerel sidecar) | Ücretsiz, offline (`.rd5`) | Yükseklik-duyarlı maliyet, nogo bölgeleri, scriptlenebilir profiller (offroad, bisiklet, motosiklet). Bkz. 3.1.3. |
-| **Yerel Valhalla/GraphHopper** (Docker veya gömülü) | Ücretsiz, limitsiz | İleri seviye kullanıcılar ve offline rota için. (Faz 4) |
+| **OSRM** (public demo) | Ücretsiz | Hızlı, basit; kısıtlı seçenek — güvenilir yedek motor. |
 
 ### 4.1 Taşıt Profilleri
 Kullanıcı birden çok taşıt tanımlar; her span'a bir taşıt atanabilir.
@@ -267,7 +203,6 @@ Seyahatlerin, günlerin ve rota parçalarının başlangıç tarih/saatlerine g�
 - Global POI → seyahate "ekle" (referans) veya "kopyala".
 - Arama: **Photon** / **Nominatim** (geocoding, ücretsiz, rate-limit'e uygun)
 - Çevre keşfi: **Overpass API** ile rota koridoru boyunca yakıt, kamp, otel, seyir noktası vb. bulma.
-- **Offline POI:** OpenAndroMaps `.poi` dosyalarından arama ve koridor sorgusu (bkz. 3.1.2); internet yoksa otomatik olarak buna düşülür.
 - Kategoriler + ikon/renk; haritada kümeleme (clustering).
 - POI'ye planlanan varış/kalış süresi → gün zaman çizelgesine yansır.
 
@@ -367,12 +302,11 @@ StopRef = { poiId } | { lngLat, label }
 
 ```
 Rotacı/
-├─ src-tauri/            # Rust: DB, dosya I/O, tile cache proxy, HTTP, OAM .poi okuyucu, sidecar yönetimi
-│  └─ sidecar/           # Java: Mapsforge tile sunucusu + BRouter (jlink runtime ile)
+├─ src-tauri/            # Rust: DB, dosya I/O, tile cache proxy, HTTP
 ├─ src/
 │  ├─ app/               # layout, routing, tema
-│  ├─ map/               # MapLibre kurulumu, katman kataloğu, çizim, offline (OAM/PMTiles) katmanları
-│  ├─ routing/           # RoutingProvider arayüzü + valhalla/ors/osrm/brouter adaptörleri, skorlayıcılar
+│  ├─ map/               # MapLibre kurulumu, katman kataloğu, çizim
+│  ├─ routing/           # RoutingProvider arayüzü + valhalla/osrm adaptörleri, skorlayıcılar
 │  ├─ trip/              # veri modeli, store, gün/span işlemleri
 │  ├─ poi/               # POI kütüphanesi, arama, Overpass
 │  ├─ io/                # gpx, kml, kmz, .rotaci
@@ -398,26 +332,24 @@ Rotacı/
 
 ## 10. Yol Haritası (Fazlar)
 
-> Rota zekâsı ve hava durumu Faz 2'ye alınırken; offline harita, POI ve rota entegrasyonu Faz 3 olarak planlandı.
-
-**Faz 0 — İskelet (1 hf)**
+**Faz 0 — İskelet (Tamamlandı ✓)**
 Tauri + React kurulum, SQLite, i18n altyapısı (TR/EN), tasarım sistemi, MapLibre + katman seçici (Harita/Arazi/Uydu), tile önbellek proxy'si, sağlayıcı/yedek (provider + fallback) soyutlaması, GitHub Actions 3 platform build.
 
-**Faz 1 — Çekirdek planlama (2–3 hf)**
+**Faz 1 — Çekirdek planlama (Tamamlandı ✓)**
 Seyahat CRUD, gün/span modeli, POI ekleme, Valhalla ile otomatik rota, manuel çizim, sürükle-bırak sıralama, otomatik kayıt, undo/redo.
 
 **Faz 2 — Rota zekâsı & Hava durumu (Tamamlandı ✓)**
 Taşıt profilleri (otomobil, motosiklet, karavan/truck, 4x4, bisiklet), ücretli/otoyol/feribot seçenekleri, asfalt/karma/offroad yüzey seçimi, yasak bölgeler (Valhalla bütçeli), alternatif rotalar (otoyollu/ücretsiz kıyaslamalı), viraj skorlaması (Kurviger stili) + OSM gerçek yüzey dağılımı (/trace_attributes), Valhalla DEM gerçek eğim profili (/height) + eğime göre rota seçimi (az yokuş, maks. eğim sınırı).
 **Open-Meteo hava durumu entegrasyonu:** Rota boyu ETA ve kalkış saatine göre dinamik saatlik hesaplama, tarih aralığına duyarlı (tahmin/arşiv/iklim), harita hava rozetleri, zaman kaydırıcısı, şiddetli yan rüzgar/don/fırtına risk uyarıları. Harita sağ tık menüsü (rota ekleme, buradan başlama, POI ekleme, yasak alan oluşturma).
 
-**Faz 3 — Offline harita, POI & rota (2–3 hf)**
-Java sidecar (jlink), Mapsforge tile sunucusu ile OAM `.map` + Elevate/Voluntary tema, hillshading, OAM `.poi` okuyucu, BRouter adaptörü (online + offline `.rd5`), DEM ön-indirme, **Bölge Paketleri yöneticisi** (indir/güncelle/sil, "seyahati offline hazırla"), online/offline otomatik geçiş.
+**Faz 3 — Veri alışverişi & Gelişmiş Entegrasyonlar (Sıradaki)**
+GPX/KML/KMZ export & import (seyahat/gün/span), `.rotaci` dosya formatı, global POI kütüphanesi, Overpass koridor araması.
 
-**Faz 4 — Veri alışverişi (1–2 hf)**
-GPX/KML/KMZ export & import (seyahat/gün/span), `.rotaci` dosya formatı, global POI kütüphanesi, Overpass koridor araması. Dağıtım kanalları (Flathub, winget, Homebrew), ilk genel sürüm.
+**Faz 4 — Dağıtım ve Yayın (1–2 hf)**
+Dağıtım kanalları (Flathub, winget, Homebrew), ilk genel sürüm.
 
 **Faz 5 — Gelişmiş (sonra)**
-Rust yerel `.map` → MVT okuyucu (Java bağımlılığını kaldırma), yerel GraphHopper (tam offline araç rotası), zaman çizelgesi & konaklama planı, maliyet (yakıt/geçiş ücreti) tahmini, ek diller.
+Zaman çizelgesi & konaklama planı, maliyet (yakıt/geçiş ücreti) tahmini, ek diller.
 
 ---
 
@@ -427,8 +359,6 @@ Rust yerel `.map` → MVT okuyucu (Java bağımlılığını kaldırma), yerel G
 - **Offroad rotalama** OSM `surface`/`tracktype` etiketlerinin doluluğuna bağlı; bazı bölgelerde veri eksik olabilir. Public Valhalla'nın offroad esnekliği sınırlı → ileri kullanım için yerel GraphHopper (custom model) Faz 4'te.
 - **Uydu kaynağı (Esri)** kullanım şartları dağıtım öncesi gözden geçirilmeli; toplu indirme yapılmamalı.
 - Uzun rotalarda geometri boyutu → saklarken encoded polyline, gösterimde sadeleştirme.
-- **Java sidecar** paket boyutunu (~40–60 MB) ve 3 platform için ayrı build'i artırır; OAM özelliği isteğe bağlı eklenti olarak indirilebilir yapılabilir.
-- **OAM lisansı** "özel kullanım" vurgusu içerir → dosyalar paketlenmez, kullanıcı indirir.
 
 ---
 
@@ -440,7 +370,7 @@ Rust yerel `.map` → MVT okuyucu (Java bağımlılığını kaldırma), yerel G
 - ~~Arayüz dili?~~ → **Türkçe + İngilizce**, dinamik olarak yeni dil eklenebilir.
 - ~~Tauri / Electron?~~ → **Tauri.**
 - ~~Mobil?~~ → **Hedeflenmiyor.**
-- ~~Offline öncelik?~~ → **Faz 3** (Rota zekâsı ve hava durumu sonrasında).
+- ~~Offline harita?~~ → **İstenmiyor / İptal edildi.** Online tile önbellekleme ve standart web haritaları esas alındı.
 - ~~Kaynak kodu & Lisans?~~ → **Açık kaynak (GPL-3.0).**
 - ~~Kod imzalama bütçesi?~~ → **Yok**, imzasız dağıtım + ücretsiz kanallar.
 

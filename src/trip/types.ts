@@ -147,3 +147,6 @@ export interface Trip {
   pois: POI[];
   avoidAreas: AvoidArea[];
 }
+
+export type RoutingProviderId = 'valhalla' | 'osrm';
+

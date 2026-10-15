@@ -701,7 +701,7 @@ export async function calculateRealRoadRoute(
 
     return { ...chosen, provider: 'valhalla', alternatives, warnings };
   } catch (err) {
-    console.warn('Valhalla routing failed, falling back to OSRM:', err);
+    console.warn('Valhalla routing failed, trying OSRM fallback:', err);
     warnings.push(i18n.t('routing.warnings.valhallaFallback'));
   }
 

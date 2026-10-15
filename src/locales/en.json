@@ -39,7 +39,6 @@
     "topo": "Topographic (OpenTopo)",
     "satellite": "Satellite (Esri World)",
     "terrain3d": "3D Terrain",
-    "offlineMap": "Offline (OAM)",
     "weatherOverlay": "Precipitation Radar"
   },
   "trip": {

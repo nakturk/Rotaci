@@ -119,7 +119,7 @@ export const MapLibreMap: React.FC = () => {
   deleteSpanEndpointRef.current = deleteSpanEndpoint;
   const handleContextMenuAtRef = useRef<((x: number, y: number, lngLat: [number, number], targetElement?: HTMLElement | null) => void) | null>(null);
 
-  const renderRouteDataRef = useRef<() => void>(() => {});
+  const renderRouteDataRef = useRef<() => void>(() => { });
   const is3dTerrainRef = useRef(is3dTerrain);
   is3dTerrainRef.current = is3dTerrain;
   const pendingStartPointRef = useRef(pendingStartPoint);
@@ -858,7 +858,7 @@ export const MapLibreMap: React.FC = () => {
         if (renderedAvoids && renderedAvoids.length > 0 && renderedAvoids[0].properties?.id) {
           avoidArea = tripRef.current.avoidAreas.find((a) => a.id === renderedAvoids[0].properties.id) || null;
         }
-      } catch {}
+      } catch { }
 
       if (!avoidArea && tripRef.current.avoidAreas?.length) {
         avoidArea = tripRef.current.avoidAreas.find((a) => {

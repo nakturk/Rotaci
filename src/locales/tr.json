@@ -39,7 +39,6 @@
     "topo": "Topografik (OpenTopo)",
     "satellite": "Uydu (Esri World)",
     "terrain3d": "3D Arazi",
-    "offlineMap": "Çevrimdışı (OAM)",
     "weatherOverlay": "Yağış Radarı"
   },
   "trip": {
